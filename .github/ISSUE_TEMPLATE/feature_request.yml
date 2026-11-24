@@ -7,7 +7,7 @@ body:
     attributes:
       label: What would you like to see?
       description: Plain English is great — tell us what would make Cephalab better for you.
-      placeholder: Example: A button to sort builds by fewest rolls.
+      placeholder: "Example: A button to sort builds by fewest rolls."
     validations:
       required: true
 
