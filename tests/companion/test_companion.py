@@ -452,6 +452,9 @@ class WornGearFind(unittest.TestCase):
                 self.assertEqual(st["state"], "found", st)
                 self.assertGreater(st["scanned"], 0)
                 self.assertEqual(bot.wearing(), {"weapon": 5000, "head": 3029, "clothes": 7017, "shoes": 25012})
+                deadline = time.monotonic() + 5                   # the drink find waits for a settled save; a fast runner gets here first
+                while not bot.settled() and time.monotonic() < deadline:
+                    time.sleep(0.05)
                 with bot._io:                                     # the outfit known: a poll reads it and finds the drink near it
                     bot.poll_once()
                     bot.poll_once()                               # then reads the drink where it was found
