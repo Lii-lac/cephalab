@@ -192,9 +192,13 @@ html.st-still *, html.st-still *::before, html.st-still *::after { transition: n
 /* ---- in the app: the page zoom (fit to the window x the Display zoom), no companion, high contrast -------------------------- */
 .st-page { zoom: calc(var(--zpl, 1) * var(--stuz, 1)); }
 html #gear .gl, html #path .pl { zoom: calc(var(--zpl, 1) * var(--stuz, 1)); }
-.st-offline { position: absolute; left: 48px; bottom: 10px; margin: 0; font: var(--txt)/1.3 s2, sans-serif; color: #151515; }
+.st-offline { position: absolute; left: 48px; bottom: 8px; z-index: 2; margin: 0; font: var(--txt)/1.3 s2, sans-serif; color: #151515; pointer-events: none; }
 .st-offline > span::before { display: none; }
-.st-page.offline .st-offline { grid-template-rows: 1fr; opacity: 1; }
+.st-off-in { display: inline-flex; align-items: center; gap: 14px; }
+.st-off-btn { height: 34px; min-width: 158px; padding: 0 16px; justify-content: center; font-size: 16px; }
+.st-copy { min-width: 118px; justify-content: center; }
+.st-page.offline .st-paper { padding-bottom: calc(54px * var(--k)); }
+.st-page.offline .st-offline { grid-template-rows: 1fr; opacity: 1; pointer-events: auto; }
 .st-page.offline [data-api] { opacity: .45; transition: opacity 200ms var(--ease); }
 .st-page [data-api] { transition: opacity 200ms var(--ease); }
 .st-page .st-slab[data-api].dis .st-why:not(:empty) { display: block; }
