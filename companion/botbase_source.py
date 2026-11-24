@@ -75,7 +75,7 @@ class BotbaseSource:
         self._exp: dict[tuple[str, int], int] = {}   # watched pieces' XP at the last poll (gains between polls)
         self._drink: dict | None = None              # the last drink read on this connection, when, and the last find
         self._drink_at = 0.0
-        self._drink_tried = 0.0
+        self._drink_tried = float("-inf")             # never tried: monotonic() starts near 0 on a fresh boot
         self._player: str | None = None              # the player's name, read once per connection and drink address
         self._player_at: int | None = None
         self._worn_ok = self._drink_ok = False       # the last poll's outfit / drink read found it (a miss right after unsettles)
