@@ -31,11 +31,15 @@ def cache_bytes(root: Path) -> int:
 
 
 def open_folder(path: Path):
-    path.mkdir(parents=True, exist_ok=True)
-    if sys.platform == "win32":
-        os.startfile(str(path))                                  # noqa: S606 (our own folder)
+    if path.is_file():
+        target = path
     else:
-        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(path)])
+        path.mkdir(parents=True, exist_ok=True)
+        target = path
+    if sys.platform == "win32":
+        os.startfile(str(target))                                # noqa: S606 (our own folder or log)
+    else:
+        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(target)])
 
 
 def view(app) -> dict:
