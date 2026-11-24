@@ -5,7 +5,7 @@ import "./styles/signin.css";
 import "./styles/settings.css";
 import { SETTINGS_HTML } from "./settings/markup";
 import { $$ } from "./settings/dom";
-import { loadCfg } from "./settings/cfg";
+import { loadCfg, mountOffline, offline } from "./settings/cfg";
 import { mountSwitch } from "./settings/connections";
 import { mountNintendo, refreshNintendo } from "./settings/nintendo";
 import { mountBuilds, paintCount } from "./settings/builds";
@@ -14,6 +14,7 @@ import { mountData } from "./settings/data";
 import { mountUpdates, refreshUpdates } from "./settings/updates";
 import { beadSquid } from "./beadsquid";
 import { late } from "./late";
+import { live, subscribe } from "./live";
 
 const shownNow = () => !!document.getElementById("settings")?.classList.contains("on");
 /** Our squid points at the chosen sticker (it lives on the Weapons beads otherwise); it hops when the choice moves. */
@@ -56,7 +57,9 @@ export function mountSettings(host: HTMLElement) {
   host.innerHTML = SETTINGS_HTML;
   mounted = true;
   mountCategories();
+  mountOffline(() => { refreshNintendo(); refreshUpdates(); });
   mountSwitch(); mountNintendo(); mountBuilds(); mountData(); mountUpdates(); mountDisplay();
+  subscribe(ev => { if (ev === "reachable" && live.reachable && shownNow() && offline()) refreshSettings(); });
 }
 
 export function refreshSettings() {
