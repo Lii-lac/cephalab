@@ -5,10 +5,11 @@
 **Cephalab** plans the shortest path of rolls, drink tickets, and chunks to finish your Splatoon 3 builds. Connect a Nintendo account or a modded Switch, pick a build, and it ticks every step forward as you play.
 
 <p align="center">
-  <a href="#install"><img src="docs/img/nav-install.png" height="56" alt="Install"></a>
-  <a href="#using-it"><img src="docs/img/nav-using-it.png" height="56" alt="Using it"></a>
-  <a href="#good-to-know"><img src="docs/img/nav-good-to-know.png" height="56" alt="Good to know"></a>
-  <a href="#credits"><img src="docs/img/nav-credits.png" height="56" alt="Credits"></a>
+  <a href="#install"><img src="docs/img/nav-install.png" height="46" alt="Install"></a>
+  <a href="#using-it"><img src="docs/img/nav-using-it.png" height="46" alt="Using it"></a>
+  <a href="#good-to-know"><img src="docs/img/nav-good-to-know.png" height="46" alt="Good to know"></a>
+  <a href="#credits"><img src="docs/img/nav-credits.png" height="46" alt="Credits"></a>
+  <a href="https://github.com/Lii-lac/cephalab/issues/new/choose"><img src="docs/img/btn-issue.png" height="46" alt="Open an issue"></a>
 </p>
 
 <img src="docs/img/div-turf.png" width="100%" alt="">
@@ -89,13 +90,6 @@ Pick a popular build under **Weapons** or build your own in the editor, then ope
 **No login.** If you'd rather not sign in, you can import an `s3s --getseed` JSON file under **Settings → Data**.
 
 **CFW safety.** Cephalab only reads Switch memory and never writes to the game, though going online on Atmosphere always carries some risk.
-
-<table width="100%">
-  <tr>
-    <td valign="middle"><strong>Something broke or have an idea?</strong></td>
-    <td align="right" valign="middle"><a href="https://github.com/Lii-lac/cephalab/issues/new/choose"><img src="docs/img/btn-issue.png" height="48" alt="Open an issue"></a></td>
-  </tr>
-</table>
 
 <img src="docs/img/div-items.png" width="100%" alt="">
 
