@@ -60,10 +60,10 @@ export function mountUpdates() {
       else paint({ ...cur, state: "error", error: r.j?.error || "Update failed" });
       return;
     }
-    paint({ ...(cur || { current: "0.1.0", latest: "", url: "", canInstall: false, error: "" }), state: "checking" });
+    paint({ ...(cur || { current: "0.1.1", latest: "", url: "", canInstall: false, error: "" }), state: "checking" });
     const r = await api("POST", "/api/update/check");
     if (r.ok && r.j?.state) paint(r.j);
-    else paint({ ...(cur || { current: "0.1.0", latest: "", url: "", canInstall: false, error: "" }), state: "error", error: r.j?.error || "Check failed" });
+    else paint({ ...(cur || { current: "0.1.1", latest: "", url: "", canInstall: false, error: "" }), state: "error", error: r.j?.error || "Check failed" });
   });
 
   subscribe(ev => { if (ev === "update") paint(live.update); });
