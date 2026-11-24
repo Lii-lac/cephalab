@@ -11,7 +11,7 @@ export const SETTINGS_HTML = `<div class="st-page">
 
     <!-- the categories' pages sit in the same cell of the paper and crossfade -->
     <div class="st-paper">
-      <p class="st-offline si-msg" id="offLine"><span>Companion not running</span></p>
+      <div class="st-offline si-msg" id="offLine" inert><span class="st-off-in"><span id="offText">Companion not running</span><button class="st-btn go st-off-btn" id="startComp" type="button"><span class="st-fade">Start companion</span></button></span></div>
       <span class="st-holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
 
       <!-- Connections: the Switch (CFW + sys-botbase), then Nintendo (SplatNet through s3s) -->
@@ -116,7 +116,7 @@ export const SETTINGS_HTML = `<div class="st-page">
         <div class="st-grp">
           <div class="st-slab" data-api>
             <span class="st-lbl">Folder</span>
-            <span class="st-ctl"><span class="st-mono st-path" id="dataDir"></span><button class="st-btn" id="openDir" type="button">Open</button></span>
+            <span class="st-ctl"><span class="st-mono st-path" id="dataDir"></span><button class="st-btn st-copy" id="copyLog" type="button" data-tip="Copy cephalab.log (tokens stripped)"><span class="st-fade">Copy log</span></button><button class="st-btn" id="openDir" type="button">Open</button></span>
           </div>
         </div>
         <div class="st-grp">
