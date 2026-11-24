@@ -93,7 +93,7 @@ def _read(peek, addr: int, size: int, cancel, deadline, progress) -> bytes:
     for o in range(0, size, SLICE):
         if cancel and cancel():
             raise Stopped("cancelled")
-        if deadline is not None and time.monotonic() > deadline:
+        if deadline is not None and time.monotonic() >= deadline:
             raise Stopped("time")
         n = min(SLICE, size - o)
         out.append(peek(addr + o, n))
