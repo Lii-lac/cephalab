@@ -22,10 +22,11 @@ function makeMock(over = {}) {
     login: { enabled: true, signedIn: true, fApi: "https://api.imink.app/f" }, test: { ok: true, version: "11.3.0" }, offline: false, reqs: [], ...over };
   m.handle = route => {
     const req = route.request(), p = new URL(req.url()).pathname, json = (s, b) => route.fulfill({ status: s, contentType: "application/json", body: JSON.stringify(b) });
-    if (m.offline || !/^\/api\/(settings|switch|data|cache|reset|login|logout|import)/.test(p)) return json(404, { error: "mock" });
+    if (m.offline || !/^\/api\/(settings|switch|data|cache|reset|login|logout|import|log)/.test(p)) return json(404, { error: "mock" });
     const body = req.postData() ? JSON.parse(req.postData()) : undefined;
     m.reqs.push({ method: req.method(), path: p, ct: req.headers()["content-type"], body });
     if (p === "/api/settings") { if (req.method() === "POST") { for (const k of Object.keys(body)) Object.assign(m.settings[k], body[k]); } return json(200, m.settings); }
+    if (p === "/api/log") return json(200, { text: "Cephalab v0.1.0 (exe)\n2026-11-24 [INFO] Listening", path: "C:\\SeedTracker\\state\\cephalab.log" });
     if (p === "/api/switch/test") return json(200, m.test);
     if (p === "/api/data/open" || p === "/api/reset") return json(200, { ok: true });
     if (p === "/api/cache/clear") { m.settings.data.cacheBytes = 0; return json(200, { ok: true, cacheBytes: 0 }); }
@@ -46,6 +47,7 @@ async function newPage(browser, url, m, opts = {}, seed = null) {
   await page.route("**/api/**", m.handle);
   await page.goto(url);
   await page.waitForFunction(() => window.seedtracker);
+  await page.waitForSelector("#settings .st-cat", { state: "attached" });
   await page.click("#cog");
   await page.waitForSelector("#settings.on .st-pg.on");
   await page.evaluate(() => document.fonts.ready);
@@ -129,14 +131,22 @@ try {
 
   // ---- offline -----------------------------------------------------------------------------------------------------
   {
-    const { ctx, page } = await newPage(browser, url, makeMock({ offline: true }));
+    const m = makeMock({ offline: true });
+    const { ctx, page } = await newPage(browser, url, m);
     await page.waitForTimeout(400);
-    const o = await page.evaluate(() => ({ line: document.querySelector("#offLine").innerText, on: document.querySelector("#offLine").classList.contains("on"),
+    const o = await page.evaluate(() => ({ line: document.querySelector("#offText").innerText, btn: document.querySelector("#startComp").innerText, on: document.querySelector("#offLine").classList.contains("on"),
       grey: [...document.querySelectorAll("#settings .st-pg.on [data-api]")].map(e => +getComputedStyle(e).opacity), inert: [...document.querySelectorAll("#settings [data-api]")].every(e => e.inert) }));
     await shot(page, "offline");
-    check("offline: one quiet line and the companion's rows greyed", o.on && o.line === "Companion not running" && o.grey.length >= 2 && o.grey.every(v => v < 1) && o.inert, JSON.stringify(o));
+    check("offline: quiet line + Start companion button and companion rows greyed", o.on && o.line === "Companion not running" && o.btn === "Start companion" && o.grey.length >= 2 && o.grey.every(v => v < 1) && o.inert, JSON.stringify(o));
     await pickCat(page, "data");
     check("offline: Data rows are greyed too", (await page.evaluate(() => [...document.querySelectorAll("#settings .st-pg.on [data-api]")].every(e => +getComputedStyle(e).opacity < 1 && e.inert))));
+    // clicking Start companion wakes the settings screen once the companion answers
+    await pickCat(page, "connections");
+    await page.evaluate(() => { window.__uri = ""; const orig = HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click = function () { if (this.href?.startsWith("cephalab://")) { window.__uri = this.href; return; } return orig.call(this); }; });
+    await page.click("#startComp");
+    m.offline = false;
+    await page.waitForFunction(() => !document.querySelector("#offLine").classList.contains("on"), null, { timeout: 5000 });
+    check("offline: Start companion triggers cephalab://start and reconnects when companion answers", (await page.evaluate(() => window.__uri)) === "cephalab://start" && (await page.evaluate(() => !document.querySelector(".st-page").classList.contains("offline"))));
     await ctx.close();
   }
 
@@ -191,6 +201,11 @@ try {
     check("data: folder and cache size from the companion", (await page.innerText("#dataDir")) === "C:\\SeedTracker\\state" && (await page.innerText("#imgSize")) === "38 MB", await page.innerText("#imgSize"));
     await page.click("#openDir"); await page.waitForTimeout(200);
     check("Open: POST /api/data/open", post(m, "/api/data/open").length === 1 && /^application\/json/.test(post(m, "/api/data/open")[0].ct));
+    const openBefore = await page.evaluate(() => document.querySelector("#openDir").getBoundingClientRect().left);
+    await page.evaluate(() => { window.__copied = ""; Object.defineProperty(navigator, "clipboard", { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
+    await page.click("#copyLog"); await page.waitForTimeout(300);
+    const openAfter = await page.evaluate(() => document.querySelector("#openDir").getBoundingClientRect().left);
+    check("Copy log: GET /api/log, copies log text, fades to Copied without layout shift", /Cephalab v0\.1\.0/.test(await page.evaluate(() => window.__copied)) && (await page.innerText("#copyLog")) === "Copied" && Math.abs(openAfter - openBefore) < 0.5);
     await page.click("#clearImg"); await page.waitForTimeout(400);
     check("Clear cached images: POST /api/cache/clear, size drops to 0", post(m, "/api/cache/clear").length === 1 && /^0 B$/.test(await page.innerText("#imgSize")));
     await page.click("#reset"); await page.waitForTimeout(300);
