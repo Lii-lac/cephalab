@@ -39,7 +39,7 @@ body:
     attributes:
       label: What happened?
       description: What did you click, and what went wrong? You can drag and drop screenshots right in here.
-      placeholder: Example: I signed in with Nintendo, clicked Path, and my hat didn't show up.
+      placeholder: "Example: I signed in with Nintendo, clicked Path, and my hat didn't show up."
     validations:
       required: true
 
