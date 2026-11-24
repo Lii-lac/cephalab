@@ -90,6 +90,11 @@ Pick a popular build under **Weapons** or build your own in the editor, then ope
 
 **CFW safety.** Cephalab only reads Switch memory and never writes to the game, though going online on Atmosphere always carries some risk.
 
+<p align="center">
+  Something broke or have an idea?<br><br>
+  <a href="https://github.com/Lii-lac/cephalab/issues/new/choose"><img src="docs/img/btn-issue.png" height="56" alt="Open an issue"></a>
+</p>
+
 <img src="docs/img/div-items.png" width="100%" alt="">
 
 ### Credits
