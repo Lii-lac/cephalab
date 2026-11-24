@@ -56,11 +56,9 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          $pre = @()
-          if ($tag -match "^v0\.|-") { $pre = @("--prerelease") }
           gh release view $tag 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag dist\cephalab.exe dist\SHA256SUMS.txt --title "Cephalab $tag" --generate-notes @pre
+            gh release create $tag dist\cephalab.exe dist\SHA256SUMS.txt --title "Cephalab $tag" --generate-notes --latest
           } else {
             gh release upload $tag dist\cephalab.exe dist\SHA256SUMS.txt --clobber
           }
