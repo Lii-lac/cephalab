@@ -700,6 +700,97 @@ class GameUpdate(unittest.TestCase):
             s.update({"updates": {"auto": False}})
             self.assertFalse(Settings(Path(d) / "settings.json").get()["updates"]["auto"])
 
+    def test_log_protocol_and_tray(self):
+        import os
+        import sys
+        import urllib.request
+        from companion import log as clog, protocol, tray as tray_mod
+
+        # Token scrubbing removes auth links, JWTs, bearer headers, and token fields
+        raw = (
+            "link=npf71b963c1b7b6d119://auth#session_token_code=SECRET123&state=abc "
+            "Authorization: Bearer abcdef1234567890 "
+            "jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3OCJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c "
+            '{"session_token": "tok_secret_value", "gtoken": "g_secret"}'
+        )
+        clean = clog.scrub(raw)
+        for secret in ("SECRET123", "abcdef1234567890", "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "tok_secret_value", "g_secret"):
+            self.assertNotIn(secret, clean)
+
+        # Rotating log file + GET /api/log + unhandled POST exception returns 500 JSON (not dropped socket)
+        with tempfile.TemporaryDirectory() as d:
+            p = clog.setup(Path(d), console=False)
+            clog.get().info("hello session_token=SHOULD_NOT_APPEAR")
+            tail = clog.read_tail(p, port=8765)
+            self.assertIn("Cephalab v", tail)
+            self.assertIn("hello", tail)
+            self.assertNotIn("SHOULD_NOT_APPEAR", tail)
+
+            class BoomSplatnet:
+                mode = "off"
+                vault = type("V", (), {"load": lambda self: {}})()
+                def finish_login(self, link):
+                    raise RuntimeError("boom session_token=SECRET_BOOM")
+
+            hub = Hub(Path(d))
+            app = App(hub, Path(d), 0, splatnet=BoomSplatnet())
+            srv = app.serve()
+            t = threading.Thread(target=srv.serve_forever, daemon=True)
+            t.start()
+            try:
+                base = f"http://127.0.0.1:{app.port}"
+                with urllib.request.urlopen(f"{base}/api/log") as r:
+                    doc = json.loads(r.read())
+                self.assertIn("Cephalab v", doc["text"])
+                req = urllib.request.Request(
+                    f"{base}/api/login",
+                    data=b'{"link":"x"}',
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with self.assertRaises(urllib.error.HTTPError) as ctx:
+                    urllib.request.urlopen(req)
+                self.assertEqual(ctx.exception.code, 500)
+                err_doc = json.loads(ctx.exception.read())
+                ctx.exception.close()
+                self.assertIn("RuntimeError", err_doc["error"])
+                self.assertNotIn("SECRET_BOOM", clog.read_tail(p))
+            finally:
+                srv.shutdown()
+                srv.server_close()
+                for h in list(clog.get().handlers):
+                    clog.get().removeHandler(h)
+                    h.close()
+
+        # Protocol URI parsing + isolated HKCU test registration
+        self.assertEqual(protocol.parse_uri("cephalab://start"), "start")
+        self.assertEqual(protocol.parse_uri("CEPHALAB://open/"), "open")
+        self.assertEqual(protocol.parse_uri("https://example.com"), "")
+        if sys.platform == "win32":
+            import winreg
+            test_root = f"Software\\CephalabTest_{os.getpid()}"
+            try:
+                ok = protocol.register(Path(r"C:\Fake\cephalab.exe"), reg_root=test_root)
+                self.assertTrue(ok)
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, f"{test_root}\\cephalab\\shell\\open\\command") as k:
+                    val, _ = winreg.QueryValueEx(k, "")
+                self.assertIn("cephalab.exe", val)
+                self.assertIn("--uri", val)
+            finally:
+                for sub in (f"{test_root}\\cephalab\\shell\\open\\command", f"{test_root}\\cephalab\\shell\\open",
+                            f"{test_root}\\cephalab\\shell", f"{test_root}\\cephalab\\DefaultIcon",
+                            f"{test_root}\\cephalab", test_root):
+                    try:
+                        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, sub)
+                    except OSError:
+                        pass
+
+            # Tray icon starts and stops cleanly on Windows
+            ico = Path(__file__).resolve().parents[2] / "assets" / "cephalab.ico"
+            tr = tray_mod.TrayIcon(ico, on_open=lambda: None, on_open_log=lambda: None, on_open_folder=lambda: None, on_quit=lambda: None)
+            self.assertTrue(tr.start())
+            tr.stop()
+
 
 if __name__ == "__main__":
     unittest.main()
