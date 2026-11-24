@@ -23,6 +23,7 @@ import requests
 from s3seed import gear as G
 from s3seed.seedmath import ABILITY_ORDER
 
+from . import log as clog
 from .hub import Hub
 from .vault import Vault, VaultError
 
@@ -358,6 +359,7 @@ class SplatnetSource:
         iksm.F_GEN_URL = F_GEN_URL
         if getattr(iksm, "__name__", "") == "iksm":
             iksm.NSOAPP_VERSION = _nxapi_nso_version()
+        clog.get().info("SplatNet login: exchanging Nintendo session_token_code")
         session_token = _quiet("Nintendo sign-in", iksm.get_session_token, m.group(1), self._verifier)
         if not session_token:
             raise SplatnetError("Nintendo didn't accept that link; open a new sign-in link and try again")
@@ -367,6 +369,7 @@ class SplatnetSource:
             self._refresh_tokens()
         except VaultError as e:
             raise SplatnetError(str(e)) from None
+        clog.get().info("SplatNet login: tokens saved and verified")
         self._need_outfit = True
         self.wake.set()
 
@@ -491,9 +494,11 @@ class SplatnetSource:
                 self.hub.set_status(self.name, "login-needed", str(e), f_api=F_GEN_URL)
                 delay = 3600
             except SplatnetError as e:
+                clog.get().warning("SplatNet poll error: %s", e)
                 self.hub.set_status(self.name, "error", str(e), f_api=F_GEN_URL)
                 delay, backoff = backoff, min(backoff * 2, MAX_BACKOFF)
             except Exception as e:                      # anything else must not kill the poller silently
+                clog.get().exception("SplatNet poll crashed")
                 self.hub.set_status(self.name, "error", f"SplatNet read failed ({e.__class__.__name__})", f_api=F_GEN_URL)
                 delay, backoff = backoff, min(backoff * 2, MAX_BACKOFF)
             self.wake.wait(delay)
