@@ -5,6 +5,14 @@ export const $$ = <T extends HTMLElement = HTMLElement>(s: string) => [...docume
 export const still = () => document.documentElement.classList.contains("st-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
 export const later = (ms: number, f: () => void) => setTimeout(f, ms);
 
+const clientEvents: string[] = [];
+function noteClient(line: string) {
+  const ts = new Date().toISOString().replace("T", " ").slice(0, 19);
+  clientEvents.push(`${ts} [ui] ${line}`);
+  if (clientEvents.length > 25) clientEvents.shift();
+}
+export function clientLog(): string { return clientEvents.join("\n"); }
+
 export type Reply = { status: number; ok: boolean; j: any };
 /** The companion API: JSON in, JSON out; never throws (an unreachable companion is status 0). */
 export async function api(method: "GET" | "POST", path: string, body?: unknown): Promise<Reply> {
@@ -15,8 +23,10 @@ export async function api(method: "GET" | "POST", path: string, body?: unknown):
     const r = await fetch(path, init);
     let j: any = {};
     try { j = await r.json(); } catch { /* no body */ }
+    if (!r.ok) noteClient(`${method} ${path} -> ${r.status}${j?.error ? " (" + String(j.error).slice(0, 120) + ")" : ""}`);
     return { status: r.status, ok: r.ok, j };
-  } catch {
+  } catch (e) {
+    noteClient(`${method} ${path} -> network error (${e instanceof Error ? e.message : "failed"})`);
     return { status: 0, ok: false, j: { error: "Companion not running" } };
   }
 }
