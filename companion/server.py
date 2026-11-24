@@ -31,10 +31,10 @@ from urllib.parse import urlparse
 
 from s3seed import equip
 
-from . import control, images, sendou
+from . import control, images, log as clog, sendou
 from .botbase_source import Unavailable
 from .hub import Hub
-from .splatnet import F_GEN_URL, SplatnetError, pieces_from_outfit
+from .splatnet import F_GEN_URL, LoginNeeded, SplatnetError, pieces_from_outfit
 from .updater import Updater
 
 MAX_BODY = 8 * 1024 * 1024
@@ -77,6 +77,7 @@ class App:
         self.dist = (bundle / "web" / "dist").resolve()
         self.img_cache = root / "cache" / "img"
         self.sendou_cache = root / "cache" / "sendou"
+        self.log_path = hub.dir / clog.LOG_NAME
         self._allow(port)
 
     def _allow(self, port: int):
@@ -122,6 +123,18 @@ def make_handler(app: App):
             self.do_GET()
 
         def do_GET(self):
+            try:
+                self._do_GET()
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                pass
+            except Exception as e:
+                clog.get().exception("Unhandled error on GET %s", self.path)
+                try:
+                    self._json(500, {"error": f"Companion error ({e.__class__.__name__})"})
+                except OSError:
+                    pass
+
+        def _do_GET(self):
             if not self._host_ok():
                 return
             path = urlparse(self.path).path
@@ -141,6 +154,8 @@ def make_handler(app: App):
                 if app.settings is None:
                     return self._json(409, {"error": "settings aren't available"})
                 return self._json(200, control.view(app))
+            if path == "/api/log":
+                return self._json(200, {"text": clog.read_tail(app.log_path, port=app.port), "path": str(app.log_path)})
             if path == "/api/update":
                 return self._json(200, app.updater.status())
             if path.startswith("/api/sendou/"):
@@ -163,10 +178,23 @@ def make_handler(app: App):
             return self._static(path)
 
         def do_POST(self):
+            try:
+                self._do_POST()
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                pass
+            except Exception as e:
+                clog.get().exception("Unhandled error on POST %s", self.path)
+                try:
+                    self._json(500, {"error": f"Companion error ({e.__class__.__name__})"})
+                except OSError:
+                    pass
+
+        def _do_POST(self):
             if not self._host_ok():
                 return
             origin = self.headers.get("Origin")
             if (origin and origin not in app.origins) or not self.headers.get("Content-Type", "").startswith("application/json"):
+                clog.get().warning("Rejected POST %s (origin=%r, ct=%r)", self.path, origin, self.headers.get("Content-Type"))
                 return self._json(403, {"error": "forbidden"})
             try:
                 n = int(self.headers.get("Content-Length") or 0)
@@ -184,6 +212,13 @@ def make_handler(app: App):
                 if app.settings is None or app.botbase is None:
                     return self._json(409, {"error": "settings aren't available"})
                 return self._json(*control.post(app, path, body))
+            if path == "/api/log/open":
+                target = app.log_path if app.log_path.is_file() else app.hub.dir
+                try:
+                    app.open_folder(target)
+                except OSError as e:
+                    return self._json(500, {"error": f"Couldn't open the log ({e.strerror or e})"})
+                return self._json(200, {"ok": True})
             if path == "/api/builds":                        # your builds' copy: {builds: [...]}, every change kept in the history
                 bs = body.get("builds") if isinstance(body, dict) else None
                 if not isinstance(bs, list) or len(bs) > 2000 or not all(isinstance(b, dict) for b in bs):
@@ -220,13 +255,16 @@ def make_handler(app: App):
             if path == "/api/login":
                 try:
                     sn.finish_login(str(body.get("link", "")))
-                except SplatnetError as e:
+                except (SplatnetError, LoginNeeded) as e:
+                    clog.get().warning("POST /api/login failed: %s", e)
                     return self._json(400, {"error": str(e)})
+                clog.get().info("POST /api/login succeeded")
                 return self._json(200, {"ok": True})
             if path == "/api/login/link":                    # a POST, so no other site can void the open link
                 return self._json(200, {"url": sn.login_url()})
             if path == "/api/logout":
                 sn.logout()
+                clog.get().info("POST /api/logout succeeded")
                 return self._json(200, {"ok": True})
             if path == "/api/refresh":
                 return self._json(200, {"ok": True, "queued": sn.refresh()})
