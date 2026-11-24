@@ -1,0 +1,1053 @@
+/* v52 styles, ported as-is from mockups/v52.template.html */
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { background: #000 url("../../../assets/information-bg.jpg") center / 400px; color: #f4f4f4; font: 16px/1.25 s2, sans-serif; letter-spacing: .01em; caret-color: transparent; }
+input, textarea, [contenteditable] { caret-color: auto; }
+img { display: block; font-size: 0; color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+.s1 { font-family: s1, sans-serif; font-weight: normal; letter-spacing: .02em; }
+.shadow { text-shadow: 1px 1px 0 #000; }
+
+/* ---------- top bar (like the game's own menus: wordmark left, tabs right) ---------- */
+header { display: flex; align-items: center; gap: 24px; padding: 22px 48px 6px; }
+.logo { font: 40px/1 s1; color: #fff; text-shadow: 2px 2px 0 #000; }
+.logo span { color: var(--yellow); }
+.tabs { margin-left: auto; display: flex; gap: 6px; }
+.tab { height: 38px; padding: 0 18px; border-radius: 999px; background: rgba(255,255,255,.18); font-size: 19px; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); transition: background 150ms var(--ease), transform 120ms var(--ease); }
+.tab.on { background: var(--blue); }
+.tab:active { transform: scale(.985); }
+@media (hover: hover) and (pointer: fine) { .tab:not(.on):hover { background: rgba(255,255,255,.28); } }
+.switch { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 6px; background: #000; transform: rotate(-2deg); font-size: 15px; }
+.switch i { width: 10px; height: 10px; border-radius: 50%; background: var(--regular); box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--regular); margin-left: 4px; }
+
+.screen { display: none; padding: 18px 48px 64px; }
+.screen.on { display: block; }
+
+/* ---------- shared objects ---------- */
+/* hang-tag card: filled colour, punched slot at the top, a hair crooked */
+.tag { position: relative; border-radius: 22px; padding: 38px 18px 18px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); -webkit-mask: var(--tag-mask) top center / 2000px auto no-repeat; mask: var(--tag-mask) top center / 2000px auto no-repeat;
+       background-image: url("../../../assets/circles-transparent.png"); background-size: 900px; background-blend-mode: soft-light; }
+.tilt-l { transform: rotate(-1deg); } .tilt-r { transform: rotate(.8deg); } .tilt-l2 { transform: rotate(-.5deg); }
+/* sticker: black slanted label, white text */
+.sticker { display: inline-block; background: #000; color: #fff; padding: 2px 10px 1px; transform: rotate(-3deg) skew(-6deg); font-size: 15px; box-shadow: 2px 2px 0 rgba(0,0,0,.35); }
+.sticker.y { background: var(--yellow); color: #000; }
+a.sticker { text-decoration: none; transition: background 150ms var(--ease), color 150ms var(--ease), transform 120ms var(--ease); }
+@media (hover: hover) and (pointer: fine) { a.sticker:hover { background: var(--yellow); color: #000; } }
+a.sticker:active { transform: rotate(-3deg) skew(-6deg) scale(.97); }
+/* ability icon as a round sticker with a white die-cut edge */
+.ab { border-radius: 50%; background: #000; display: grid; place-items: center; flex: none; box-shadow: 0 0 0 1.5px rgba(255,255,255,.85), 1px 2px 0 1px rgba(0,0,0,.35); }
+.ab img { width: 88%; height: 88%; }
+.ab.empty { background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
+.z26 { width: 26px; height: 26px; } .z28 { width: 28px; height: 28px; } .z34 { width: 34px; height: 34px; } .z30 { width: 30px; height: 30px; } .z48 { width: 48px; height: 48px; } .z36 { width: 36px; height: 36px; } .z44 { width: 44px; height: 44px; } .z56 { width: 56px; height: 56px; }
+/* gear sits on a torn black tape blob and breaks out of it */
+.blob { position: relative; display: grid; place-items: center; flex: none; }
+.blob::before { content: ""; position: absolute; inset: 8% 2% 4% 6%; background: url("../../../assets/gesotown-tape-blob-bg.png") center / 100% 100% no-repeat; }
+.blob img { position: relative; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.4)); }
+.mode { width: 26px; height: 26px; filter: drop-shadow(1px 1px 0 #000); }
+.mode.off { opacity: .25; filter: grayscale(1); }
+.press { transition: transform 120ms var(--ease); } .press:active { transform: scale(.985); }
+
+/* ---------- WEAPONS ---------- */
+.wl { display: grid; grid-template-columns: 330px 1fr; gap: 40px; align-items: start; }
+.picker { background-color: #18171f; color: #f4f4f4; }
+.picker .head { color: #fff; }
+.picker .wrow { background: rgba(255,255,255,.05); color: #e8e8e8; text-shadow: none; }
+.picker .wrow.on { background: #111; color: var(--yellow); }
+.picker .classes button { background: rgba(255,255,255,.05); }
+.picker .classes button.on { background: var(--yellow); }
+.picker .wlist::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); }
+.picker .head { font: 26px s1; text-shadow: 2px 2px 0 rgba(0,0,0,.5); margin: 4px 4px 12px; }
+.classes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 12px; }
+.classes button { aspect-ratio: 1; border-radius: 10px; padding: 5px; background: rgba(0,0,0,.18); transition: background 150ms var(--ease); }
+.classes button.on { background: var(--yellow); }
+.classes img { width: 100%; height: 100%; object-fit: contain; }
+.wlist { display: flex; flex-direction: column; gap: 6px; max-height: calc(100vh - 290px); overflow-y: auto; padding-right: 4px; }
+.wrow { display: flex; align-items: center; gap: 10px; padding: 4px 10px 4px 4px; border-radius: 10px; background: rgba(255,255,255,.14); text-align: left; font-size: 18px; text-shadow: 1px 1px 0 rgba(0,0,0,.5); }
+.wrow img { width: 48px; height: 40px; object-fit: contain; }
+.wrow.on { background: var(--yellow); color: #000; text-shadow: none; }
+.wlist::-webkit-scrollbar { width: 8px; } .wlist::-webkit-scrollbar-thumb { background: rgba(255,255,255,.5); border-radius: 8px; }
+
+.whead { display: flex; align-items: center; gap: 28px; margin: 4px 0 26px; }
+.whead .blob { width: 230px; height: 170px; }
+.whead h1 { font: 64px/1 s1; margin: 0 0 12px; text-shadow: 3px 3px 0 #000; }
+.kit { display: flex; gap: 10px; align-items: center; }
+.kit .k { display: flex; align-items: center; gap: 6px; background: #000; padding: 3px 12px 3px 4px; border-radius: 999px; font-size: 16px; }
+.kit .k img { width: 30px; height: 30px; }
+.blabel { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+.blabel h2 { font: 30px s1; margin: 0; text-shadow: 2px 2px 0 #000; }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(296px, 1fr)); gap: 26px 22px; }
+.bcard { padding: 34px 14px 14px !important; }
+.bcard .title { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 4px 4px 10px; }
+.bcard .title h3 { font: 23px/1 s1; margin: 0; text-shadow: 2px 2px 0 rgba(0,0,0,.45); }
+.bcard .title .modes { display: flex; gap: 2px; }
+.bcard .rank { position: absolute; top: 10px; left: 14px; }
+.inner { background: rgba(0,0,0,.32); border-radius: 14px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+.prow { display: flex; align-items: center; gap: 10px; }
+.prow .blob { width: 56px; height: 50px; }
+.prow .sep { width: 2px; height: 26px; background: rgba(255,255,255,.25); margin: 0 2px; border-radius: 1px; }
+.prow .subs { display: flex; gap: 8px; }
+.bfoot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+.btn { height: 38px; padding: 0 18px; border-radius: 999px; font-size: 18px; background: rgba(255,255,255,.1); color: #fff; transition: transform 120ms var(--ease); }
+.btn:active { transform: scale(.985); }
+.btn.y { background: var(--yellow); color: #000; }
+.btn.w { background: #fff; color: #000; }
+
+/* ---------- PATH (v7: v5's look, one size, one ring style) ---------- */
+.pl { max-width: 1280px; }
+.ptop { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+.ptop .blob { width: 110px; height: 82px; }
+.ptop h1 { font: 42px/1 s1; margin: 0; text-shadow: 3px 3px 0 #000; }
+.toggles { margin-left: auto; display: flex; gap: 10px; }
+.tog { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px 0 8px; border-radius: 999px; background: #000; font-size: 17px; }
+.tog .seq { width: 54px; height: 20px; }
+.tog .ord { font: 13px s1; background: #fff; color: #000; border-radius: 6px; padding: 2px 5px; letter-spacing: .1em; }
+.tog .chunkico { width: 30px; height: 30px; border-radius: 50%; background: #222; display: grid; place-items: center; }
+.tog .chunkico img { width: 22px; }
+.tog .tkt { width: 56px; transform: rotate(-6deg); }
+.knob { width: 34px; height: 20px; border-radius: 10px; background: #444; position: relative; transition: background 180ms var(--ease); }
+.knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #999; transition: transform 180ms var(--ease), background 180ms var(--ease); }
+.tog.on .knob { background: var(--yellow); } .tog.on .knob::after { transform: translateX(14px); background: #000; }
+
+.next { background: var(--yellow) url("../../../assets/battle-bg-pattern-yellow.jpg") center / 260px; color: #111; padding: 42px 30px 24px; display: grid; grid-template-columns: auto 1fr auto; gap: 28px; align-items: center; margin-bottom: 28px; }
+.next .flow { display: flex; align-items: center; gap: 14px; }
+.next .flow .blob { width: 110px; height: 92px; }
+.next .arrow { font: 40px s1; }
+.next h2 { font: 34px/1.05 s1; margin: 0 0 6px; }
+.next p { margin: 0; font-size: 19px; color: #3a3a1a; }
+.next .badges { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.badge { display: flex; align-items: center; gap: 8px; white-space: nowrap; background: #000; color: #fff; padding: 4px 12px 4px 5px; border-radius: 999px; font-size: 17px; }
+.badge b { font: 20px s1; font-weight: normal; color: var(--yellow); }
+.badge.stepb { transform: rotate(3deg); background: var(--blue); padding-left: 12px; }
+.badge .tk { width: 40px; transform: rotate(-8deg); margin: -4px 0; }
+.badge .chunkico { width: 26px; height: 26px; border-radius: 50%; background: #222; display: grid; place-items: center; }
+.badge .chunkico img { width: 18px; }
+.next .ribbon { position: absolute; top: 14px; left: 24px; }
+
+.lanes { display: flex; flex-direction: column; gap: 22px; }
+:is(.lane, .pclane) { position: relative; display: grid; grid-template-columns: 210px 1fr auto; align-items: center; gap: 22px; padding: 44px 26px 24px 18px; background: #0c0c0c; }
+:is(.lane, .pclane).t1 { clip-path: polygon(0 6%, 3% 0, 22% 4%, 40% 0, 63% 5%, 82% 1%, 100% 4%, 99% 52%, 100% 96%, 78% 100%, 57% 95%, 36% 100%, 15% 96%, 1% 100%, 0 60%); }
+:is(.lane, .pclane).t2 { clip-path: polygon(1% 3%, 18% 0, 37% 5%, 55% 1%, 76% 4%, 100% 0, 100% 45%, 99% 100%, 81% 95%, 62% 100%, 41% 96%, 20% 100%, 0 97%, 1% 40%); transform: rotate(.4deg); }
+:is(.lane, .pclane).t3 { clip-path: polygon(0 2%, 21% 6%, 44% 0, 66% 4%, 88% 0, 100% 5%, 100% 98%, 84% 94%, 60% 100%, 38% 95%, 17% 100%, 0 95%); transform: rotate(-.3deg); }
+:is(.lane, .pclane) .cap { position: absolute; top: 14px; left: 20px; font-size: 15px; color: #8a8a8a; }
+:is(.lane, .pclane) .cap b { color: #fff; font-weight: normal; }
+.lnow { display: flex; align-items: center; gap: 10px; }
+.lnow .blob { width: 84px; height: 70px; }
+.lnow .blob::before { display: none; }
+.have { display: flex; gap: 6px; }
+.have .wrong { opacity: .3; }
+
+/* every step is the same 44px sticker; only the ring says what it is */
+.track { display: flex; align-items: flex-start; gap: 26px; }
+.step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.step .n { font-size: 14px; color: #8a8a8a; white-space: nowrap; }
+.step > .ab, .bracket .ab { transform: rotate(var(--r, 0deg)); }
+.step.keep > .ab { box-shadow: 0 0 0 3px #fff, 2px 3px 0 3px rgba(255,255,255,.12); }
+.step.past > .ab { opacity: .35; box-shadow: 0 0 0 2px #555; }
+.step.tool > .ab { box-shadow: 0 0 0 3px #fff; }
+.step.tool > .ab svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.step.done { opacity: .45; }
+.step.done::after { content: ""; position: absolute; top: 20px; left: -6px; right: -6px; height: 5px; background: var(--yellow); border-radius: 3px; transform: rotate(-24deg); }
+.step.here > .ab { box-shadow: 0 0 0 4px var(--yellow); }
+.step.here .n { background: var(--yellow); color: #000; padding: 1px 8px; transform: rotate(-3deg) skew(-6deg); }
+/* small corner badge: the drink's ability or the chunk shape */
+.corner { position: absolute; top: -8px; left: calc(50% + 8px); width: 24px; height: 24px; border-radius: 50%; background: #000; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; z-index: 1; }
+.corner img { width: 17px; height: 17px; }
+/* drink: the ticket stapled onto the roll, like a receipt on a takeout bag, at its own angle */
+.step.drink { margin-right: 48px; }
+.ticket { position: absolute; left: 26px; top: -14px; width: 84px; transform: rotate(var(--tr, 8deg)); transform-origin: 8% 35%; z-index: 1; filter: drop-shadow(1px 2px 0 rgba(0,0,0,.55)); }
+.ticket img.base { width: 84px; }
+.tkt { position: relative; display: inline-block; flex: none; }
+.tkt img.base { display: block; width: 100%; }
+.tkt img.tic, .ticket img.tic { position: absolute; left: 40%; top: 50%; height: 66%; width: auto; aspect-ratio: 1; transform: translate(-50%, -50%); }
+
+.ticket img.st { position: absolute; left: -3px; top: 14px; width: 18px; opacity: .8; transform: rotate(-80deg); }
+/* advance the seed: same-size faded stickers in a dashed bracket */
+.bracket { display: flex; gap: 10px; padding: 8px 12px; margin: -10px 0 -2px; border: 2.5px dashed #555; border-radius: 999px; }
+.bracket .ab { opacity: .35; box-shadow: 0 0 0 2px #555; }
+.goal { display: flex; align-items: center; gap: 8px; background: var(--yellow); padding: 8px 12px; border-radius: 999px; transform: rotate(-2deg); box-shadow: 3px 3px 0 #000; }
+.goal .met { opacity: .45; }
+/* ===== v8: Splatoon 3 team-colour palette (approximated by eye; the wiki blocks fetches) ===== */
+:root {
+  --splat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M100 14c13 0 17 15 29 17s25-11 34 1-3 23 3 33 23 9 21 23-19 13-20 25 13 25 1 34-23-5-33 1-11 25-28 25-17-21-31-22-25 13-34 3 5-25-3-35-27-7-23-22 21-14 21-28-15-24-5-33 25 8 35-1 12-26 30-26z'/%3E%3Ccircle cx='176' cy='40' r='7'/%3E%3Ccircle cx='24' cy='162' r='5'/%3E%3C/svg%3E");
+  --c-yellow: #e6f53f; --c-blue: #5d47f0;      /* the launch pair */
+  --c-orange: #ff8a3d; --c-sky: #3fa4ff;
+  --c-pink: #ff4f9b;   --c-lime: #9be84a;
+  --c-purple: #a865ff; --c-mint: #45e3b8;
+  --c-coral: #ff6363; --c-teal: #2fc4cf;
+}
+/* ---------- WEAPONS: the game's own weapon-select feel ---------- */
+#weapons .wtop { display: flex; align-items: flex-end; gap: 18px; margin: 6px 0 18px; }
+#weapons .wtop h1 { font: 46px/1 s1; margin: 0; text-shadow: 3px 3px 0 #000; }
+.ctabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.ctab { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px 0 6px; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font-size: 17px; transition: transform 120ms var(--ease), background 150ms var(--ease); }
+.ctab img { width: 34px; height: 30px; object-fit: contain; }
+.ctab:active { transform: scale(.985); }
+.ctab.on { background: var(--cc); color: #000; transform: rotate(-2deg); box-shadow: 2px 2px 0 #000; }
+.wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 16px; }
+.wtile { position: relative; border-radius: 18px; padding: 10px 12px 12px; background: #1b1a23; color: #fff; text-align: left; overflow: hidden; transform: rotate(var(--tr, 0deg)); transition: transform 120ms var(--ease); box-shadow: 3px 3px 0 rgba(0,0,0,.55); }
+.wtile::before { content: ""; position: absolute; left: 50%; top: 8px; width: 150px; height: 118px; margin-left: -75px; background: var(--cc); -webkit-mask: var(--splat) center / contain no-repeat; mask: var(--splat) center / contain no-repeat; transform: rotate(var(--sr, -10deg)); opacity: .9; }
+.wtile:active { transform: rotate(var(--tr, 0deg)) scale(.985); }
+.wtile .art { position: relative; width: 100%; height: 112px; object-fit: contain; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.35)); }
+.wtile .nm { position: relative; display: block; font: 19px/1.05 s1; margin: 6px 2px 8px; min-height: 40px; }
+.wtile .kit { position: relative; display: flex; gap: 6px; align-items: center; }
+.wtile .kit span { width: 32px; height: 32px; border-radius: 50%; background: #000; box-shadow: 0 0 0 1.5px rgba(255,255,255,.7); display: grid; place-items: center; }
+.wtile .kit img { width: 24px; height: 24px; }
+.wtile .count { position: absolute; z-index: 1; top: 10px; right: 10px; background: var(--cc); color: #000; font-size: 13px; padding: 1px 8px; border-radius: 999px; transform: rotate(4deg); }
+
+/* ---------- WEAPON PAGE ---------- */
+.back { display: inline-flex; align-items: center; gap: 6px; font-size: 18px; color: #ddd; margin: 2px 0 10px; }
+.back:active { transform: scale(.985); }
+.whero2 { display: flex; align-items: center; gap: 30px; margin-bottom: 26px; }
+.whero2 .splat { position: relative; width: 250px; height: 190px; display: grid; place-items: center; }
+.whero2 .splat::before { content: ""; position: absolute; inset: 0; background: var(--cc); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M100 14c13 0 17 15 29 17s25-11 34 1-3 23 3 33 23 9 21 23-19 13-20 25 13 25 1 34-23-5-33 1-11 25-28 25-17-21-31-22-25 13-34 3 5-25-3-35-27-7-23-22 21-14 21-28-15-24-5-33 25 8 35-1 12-26 30-26z'/%3E%3Ccircle cx='176' cy='40' r='7'/%3E%3Ccircle cx='24' cy='162' r='5'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M100 14c13 0 17 15 29 17s25-11 34 1-3 23 3 33 23 9 21 23-19 13-20 25 13 25 1 34-23-5-33 1-11 25-28 25-17-21-31-22-25 13-34 3 5-25-3-35-27-7-23-22 21-14 21-28-15-24-5-33 25 8 35-1 12-26 30-26z'/%3E%3Ccircle cx='176' cy='40' r='7'/%3E%3Ccircle cx='24' cy='162' r='5'/%3E%3C/svg%3E") center / contain no-repeat; transform: rotate(-8deg); }
+.whero2 .splat img { position: relative; width: 210px; height: 150px; object-fit: contain; filter: drop-shadow(3px 4px 0 rgba(0,0,0,.45)); }
+.whero2 h1 { font: 60px/1 s1; margin: 0 0 12px; text-shadow: 3px 3px 0 #000; }
+.bcard { color: #000; }
+.bcard .title h3 { text-shadow: none !important; }
+.bcard .inner { background: rgba(0,0,0,.78) !important; }
+.bcard .mode { filter: drop-shadow(1px 1px 0 rgba(0,0,0,.6)); }
+.bcard .mode.off { opacity: .3; filter: grayscale(1) brightness(.3); }
+.bcard .btn { background: #000; color: #fff; }
+.bcard .btn.y { background: #fff; color: #000; }
+.bcard .rank { background: #000 !important; color: #fff !important; }
+
+/* ---------- PATH: chunk sticker slapped over the roll; sponge scrub ---------- */
+.slap { position: relative; width: 44px; height: 44px; }
+.slap > .ab { opacity: .5; }
+.chunkstk { position: absolute; left: -9px; top: -11px; width: 62px; height: 62px; transform: rotate(var(--cr, 12deg)); filter: drop-shadow(2px 3px 0 rgba(0,0,0,.6)); }
+.chunkstk .edge { position: absolute; inset: 0; background: #fff; -webkit-mask: url("../../../assets/chunk.png") center / contain no-repeat; mask: url("../../../assets/chunk.png") center / contain no-repeat; }
+.chunkstk .fill { position: absolute; inset: 4px; background: #000; -webkit-mask: url("../../../assets/chunk.png") center / contain no-repeat; mask: url("../../../assets/chunk.png") center / contain no-repeat; }
+.chunkstk img { position: absolute; left: 15px; top: 15px; width: 32px; height: 32px; }
+.step.slapped { margin-right: 6px; }
+.sponge svg { width: 34px !important; height: 34px !important; stroke: none !important; }
+.next .bigsponge { width: 64px; height: 64px; border-radius: 50%; background: #000; display: grid; place-items: center; box-shadow: 0 0 0 3px #fff; }
+.next .bigsponge svg { width: 48px; height: 48px; }
+:is(.lane, .pclane) .goal { background: var(--c-yellow); }
+
+
+/* ---------- v9: one weapons screen: tabs + a strip of splats on top, the weapon and its builds below ---------- */
+.strip { display: flex; gap: 6px; overflow-x: auto; padding: 6px 4px 14px; margin-bottom: 18px; border-bottom: 2px dashed rgba(255,255,255,.12); }
+.chip { position: relative; flex: none; width: 92px; height: 78px; display: grid; place-items: center; border-radius: 14px; transition: transform 120ms var(--ease), background 150ms var(--ease); }
+.chip::before { content: ""; position: absolute; inset: 4px 8px; background: rgba(255,255,255,.07); -webkit-mask: var(--splat) center / contain no-repeat; mask: var(--splat) center / contain no-repeat; transform: rotate(var(--sr, -8deg)); transition: background 150ms var(--ease); }
+.chip img { position: relative; width: 78px; height: 58px; object-fit: contain; filter: drop-shadow(2px 2px 0 rgba(0,0,0,.4)); }
+.chip:active { transform: scale(.985); }
+.chip.on::before { background: var(--cc); }
+.chip.on { background: rgba(255,255,255,.07); }
+@media (hover: hover) and (pointer: fine) { .chip:not(.on):hover::before { background: rgba(255,255,255,.16); } }
+.strip::-webkit-scrollbar { height: 8px; } .strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 8px; }
+#weapons .ctabs { margin-bottom: 8px; }
+#weapons .whero2 { margin-bottom: 18px; }
+#weapons .whero2 .splat { width: 210px; height: 160px; }
+#weapons .whero2 .splat img { width: 180px; height: 130px; }
+#weapons .whero2 h1 { font-size: 54px; }
+/* ===================== v10 ===================== */
+/* ---- weapons: two columns, not rows: the weapon + wheel on the left, builds pinned on the right ---- */
+#weapons.on { display: grid; grid-template-columns: 470px 1fr; gap: 40px; align-items: start; }
+.wleft { position: sticky; top: 12px; display: flex; flex-direction: column; align-items: center; }
+/* class tags: strips of torn tape, black with the class colour; the picked one is the colour itself */
+.tapes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 6px; margin-bottom: 6px; }
+.tape { position: relative; display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 16px 0 10px; background: #0b0b0b; color: var(--cc); font-size: 17px;
+        clip-path: polygon(0 12%, 4% 0, 9% 10%, 14% 2%, 100% 0, 97% 22%, 100% 44%, 96% 66%, 100% 88%, 95% 100%, 0 100%, 3% 76%, 0 54%, 4% 32%);
+        transform: rotate(var(--tr, 0deg)); transition: transform 120ms var(--ease), background 150ms var(--ease), color 150ms var(--ease); }
+.tape img { width: 30px; height: 26px; object-fit: contain; }
+.tape:active { transform: rotate(var(--tr, 0deg)) scale(.985); }
+.tape.on { background: var(--cc); color: #000; transform: rotate(var(--tr, 0deg)) scale(1.08); z-index: 1; }
+@media (hover: hover) and (pointer: fine) { .tape:not(.on):hover { background: #1a1a1a; } }
+
+.hero3 { display: flex; flex-direction: column; align-items: center; margin: 2px 0 0; }
+.hero3 .splat { position: relative; width: 300px; height: 210px; display: grid; place-items: center; }
+.hero3 .splat::before { content: ""; position: absolute; inset: 0; background: var(--cc); -webkit-mask: var(--splat) center / contain no-repeat; mask: var(--splat) center / contain no-repeat; transform: rotate(-8deg); transition: background 250ms var(--ease); }
+.hero3 .splat img { position: relative; width: 250px; height: 170px; object-fit: contain; filter: drop-shadow(3px 4px 0 rgba(0,0,0,.45)); }
+.hero3 h1 { font: 44px/1 s1; margin: 4px 0 10px; text-shadow: 3px 3px 0 #000; text-align: center; }
+
+/* the wheel: drag it, flick it, it snaps and wraps; the ink splat marks the one picked */
+.wheel { position: relative; width: 470px; height: 120px; margin-top: 14px; overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none;
+         -webkit-mask: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); }
+.wheel.drag { cursor: grabbing; }
+.wheel .spot { position: absolute; left: 50%; top: 50%; width: 120px; height: 104px; margin: -52px 0 0 -60px; background: var(--cc); -webkit-mask: var(--splat) center / contain no-repeat; mask: var(--splat) center / contain no-repeat; transform: rotate(10deg); transition: background 250ms var(--ease); }
+.wheel .it { position: absolute; left: 50%; top: 50%; width: 104px; height: 78px; margin: -39px 0 0 -52px; will-change: transform, opacity; }
+.wheel .it img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 0 rgba(0,0,0,.45)); pointer-events: none; }
+.fams { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; max-width: 470px; }
+.fam { display: grid; place-items: center; width: 44px; height: 34px; padding: 2px; border-radius: 8px; background: rgba(255,255,255,.08); color: #ccc; font-size: 14px; transform: rotate(var(--tr, 0deg)); transition: background 150ms var(--ease), color 150ms var(--ease); }
+.fam img { width: 38px; height: 28px; object-fit: contain; }
+.fam.on { background: #fff; color: #000; }
+.fam:active { transform: rotate(var(--tr, 0deg)) scale(.985); }
+
+/* builds pinned up on the right: two staggered columns, each tag its own colour */
+.wright .blabel { margin: 8px 0 18px; }
+.pins { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 26px; align-items: start; }
+.pins > :nth-child(even) { margin-top: 56px; }
+.pins .bcard { padding: 34px 16px 16px !important; }
+
+/* ---- path ---- */
+.chunkonly { position: relative; width: 56px; height: 56px; margin: -6px 0 -6px; transform: rotate(var(--cr, 8deg)); filter: drop-shadow(2px 3px 0 rgba(0,0,0,.6)); }
+.chunkonly .edge { position: absolute; inset: 0; background: #fff; -webkit-mask: url("../../../assets/chunk.png") center / contain no-repeat; mask: url("../../../assets/chunk.png") center / contain no-repeat; }
+.chunkonly .fill { position: absolute; inset: 4px; background: #000; -webkit-mask: url("../../../assets/chunk.png") center / contain no-repeat; mask: url("../../../assets/chunk.png") center / contain no-repeat; }
+.chunkonly img { position: absolute; left: 13px; top: 13px; width: 30px; height: 30px; }
+.chunkbare { width: 28px; height: 28px; flex: none; filter: drop-shadow(1px 1px 0 rgba(0,0,0,.5)); }
+.next .swap { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.next .swap .arrow2 { font: 28px s1; margin: 0 6px; }
+.next .swap .ab { box-shadow: 0 0 0 2px #000; }
+/* ticket: the ability sits dead centre of the ticket's dark window, rotating with it */
+.tkt img.tic, .ticket img.tic { left: 35.7% !important; top: 49.5% !important; height: 64% !important; transform: translate(-50%, -50%) !important; }
+
+
+/* ===== v11: steps on one grid ===== */
+.track { gap: 4px !important; align-items: flex-start; }
+.step { width: 96px; gap: 6px !important; }
+.step.wide { width: auto; padding: 0 8px; }
+.step .vis { position: relative; height: 68px; display: grid; place-items: center; }
+.step .vis > .ab { transform: rotate(var(--r, 0deg)); }
+.step .n { text-align: center; line-height: 1.1; }
+.step.keep .vis > .ab { box-shadow: 0 0 0 3px #fff, 2px 3px 0 3px rgba(255,255,255,.12); }
+.step.past .vis > .ab { opacity: .35; box-shadow: 0 0 0 2px #555; }
+.step.tool .vis > .ab { box-shadow: 0 0 0 3px #fff; }
+.step.here .vis > .ab { box-shadow: 0 0 0 4px var(--yellow) !important; }
+.step.drink, .step.slapped { margin-right: 0 !important; }
+.step.done::after { top: 28px !important; }
+.bracket { margin: 0 !important; }
+/* the ticket: smaller on the roll, ability filling its window like the game's tickets */
+.ticket { left: calc(50% + 4px) !important; top: -4px !important; width: 50px !important; }
+.ticket img.base { width: 50px !important; }
+.ticket img.st { width: 13px !important; left: -2px !important; top: 8px !important; }
+.tkt img.tic, .ticket img.tic { height: 80% !important; }
+/* chunk sticker: reads the same size as a roll */
+.chunkonly { width: 66px !important; height: 66px !important; margin: 0 !important; }
+.chunkonly .fill { inset: 5px !important; }
+.chunkonly img { left: 14px !important; top: 14px !important; width: 38px !important; height: 38px !important; }
+/* toggles: two icon styles side by side so Alex can pick */
+.toggles { flex-direction: column; align-items: flex-end; gap: 8px !important; }
+.togrow { display: flex; align-items: center; gap: 8px; }
+.togrow .which { font-size: 13px; color: #999; width: 60px; text-align: right; }
+.tog .trio { display: flex; gap: 2px; }
+.tog .chunklit { position: relative; width: 34px; height: 34px; }
+.tog .chunklit .edge { position: absolute; inset: 0; background: #fff; -webkit-mask: url("../../../assets/chunk.png") center / contain no-repeat; mask: url("../../../assets/chunk.png") center / contain no-repeat; }
+.tog .chunklit .fill { position: absolute; inset: 3px; background: #000; -webkit-mask: url("../../../assets/chunk.png") center / contain no-repeat; mask: url("../../../assets/chunk.png") center / contain no-repeat; }
+.tog .chunklit img { position: absolute; left: 7px; top: 7px; width: 20px; height: 20px; }
+.tog .tkt { width: 50px !important; }
+.badge .tkt { width: 44px !important; }
+
+/* ===== v12 ===== */
+/* weapons: horizontal again: tags + wheel across the top, the weapon beside an n x 3 table of builds */
+#weapons.on { display: block !important; }
+.wtopbar { display: flex; flex-wrap: wrap; gap: 8px 6px; margin-bottom: 4px; }
+#weapons .wheel { width: 100%; height: 124px; margin-top: 6px; }
+#weapons .fams { max-width: none; justify-content: center; margin: 6px 0 18px; }
+.wmain { display: grid; grid-template-columns: 320px 1fr; gap: 34px; align-items: start; }
+.wmain .hero3 { position: sticky; top: 12px; }
+.wmain .hero3 .splat { width: 290px; height: 200px; }
+.wmain .hero3 .splat img { width: 240px; height: 160px; }
+.wmain .hero3 h1 { font-size: 40px; }
+.pins { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 22px !important; }
+.pins > :nth-child(even) { margin-top: 0 !important; }
+/* path: shared columns, bigger stickers, > between steps */
+.pl { max-width: 1360px !important; --col: 100px; }
+.z52 { width: 52px; height: 52px; }
+.lane { grid-template-columns: 200px auto 1fr auto !important; }
+.track.grid { display: grid !important; gap: 0 !important; align-items: start; }
+.track.grid .step { grid-row: 1; width: auto !important; position: relative; z-index: 1; }
+.track.grid .step:not(.first)::before { content: "›"; position: absolute; left: -7px; top: 22px; font: 24px/1 s1; color: #5a5a5a; }
+.track.grid .step .vis { height: 70px; }
+.burnbg { grid-row: 1; position: relative; z-index: 0; height: 70px; margin: 0 10px; border: 2.5px dashed #555; border-radius: 999px; }
+.burnbg .n { position: absolute; left: 0; right: 0; top: 76px; text-align: center; font-size: 14px; color: #8a8a8a; }
+.chunkonly { transform: none !important; width: 70px !important; height: 70px !important; }
+.chunkonly img { left: 16px !important; top: 16px !important; width: 38px !important; height: 38px !important; }
+.ticket { width: 60px !important; left: calc(50% + 6px) !important; top: -6px !important; }
+.ticket img.base { width: 60px !important; }
+.lcost { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; justify-self: end; }
+.lc { display: flex; align-items: center; gap: 6px; padding: 2px 10px 2px 6px; border-radius: 999px; background: #1c1c1c; font-size: 15px; color: #bbb; white-space: nowrap; }
+.lc b { font: 17px s1; font-weight: normal; color: #fff; }
+.toggles { flex-direction: row !important; align-items: center !important; }
+.tog .num { color: #fff; font: 15px/1 s1; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+.tog .chunklit img { left: 6px !important; top: 6px !important; width: 22px !important; height: 22px !important; }
+
+/* ===================== v14: the Equip screen's weapon board ===================== */
+#weapons.on { display: block !important; }
+html, body { overflow-x: hidden; }
+.equip { display: grid; grid-template-columns: 680px 1fr; gap: 26px; align-items: start; }
+/* the board: a dark sheet with torn edges, slightly crooked, like the game's */
+.board { position: relative; background: #26252b; filter: drop-shadow(0 0 0 #000); padding: 58px 26px 30px; transform: rotate(-1deg);
+         clip-path: polygon(1% 2%, 12% 0, 30% 1.5%, 48% 0, 70% 1%, 88% 0, 99% 1.5%, 100% 20%, 99% 45%, 100% 70%, 99% 98%, 80% 100%, 60% 98.5%, 40% 100%, 20% 98.6%, 1% 100%, 0 75%, 1% 50%, 0 25%); }
+.board::before { content: ""; position: absolute; inset: 0; background: url("../../../assets/information-bg.jpg") center / 400px; opacity: .12; mix-blend-mode: screen; pointer-events: none; }
+/* sort tag: the game's "L  Main" label, cycles Main > Sub > Special */
+.sorttag { position: absolute; top: 10px; right: 22px; display: flex; flex-direction: column; align-items: center; gap: 2px; z-index: 2; }
+.sorttag .lbtn { width: 30px; height: 30px; border-radius: 50%; background: #2a2a2e; color: #fff; display: grid; place-items: center; font: 15px s1; box-shadow: 0 0 0 2px #000; }
+.sorttag .lbl { background: #2a2a2e; color: #fff; padding: 3px 12px 4px; font: 17px s1; border-radius: 4px; box-shadow: 0 0 0 2px #000; }
+.sorttag:active { transform: scale(.985); }
+/* filter icons along an arc on the top edge; the picked one sits on a yellow splat */
+.arc { position: absolute; top: 4px; left: 40px; right: 130px; height: 56px; z-index: 2; }
+.fi { position: absolute; width: 36px; height: 36px; border-radius: 50%; background: #2a2a2e; display: grid; place-items: center; box-shadow: 0 0 0 2px #000; transform: translate(-50%, 0); transition: transform 120ms var(--ease); }
+.fi img { width: 26px; height: 26px; object-fit: contain; }
+.fi.on { background: none; box-shadow: none; transform: translate(-50%, -2px) scale(1.25); }
+.fi.on::before { content: ""; position: absolute; inset: -9px; background: var(--c-yellow); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; z-index: -1; }
+.fi:active { transform: translate(-50%, 0) scale(.95); }
+/* the cards: grey panel with the weapon, a yellow strip with sub and special */
+.cards { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px 10px; min-height: 444px; align-content: start; }
+.wcard { position: relative; height: 140px; border-radius: 12px; background: linear-gradient(#e9e9e6, #c9c9c5); box-shadow: 0 0 0 2px #3a3a3e, 0 3px 0 2px #000; overflow: visible; transition: transform 120ms var(--ease); }
+.wcard:active { transform: scale(.985); }
+.wcard .art { position: absolute; left: 6px; right: 6px; top: 6px; height: 84px; display: grid; place-items: center; }
+.wcard .art img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(1px 2px 0 rgba(0,0,0,.25)); }
+.wcard .kitstrip { position: absolute; left: 0; right: 0; bottom: 0; height: 42px; border-radius: 0 0 12px 12px; background: var(--c-yellow); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.wcard .kitstrip span { width: 32px; height: 32px; border-radius: 50%; background: #1e1d33; display: grid; place-items: center; }
+.wcard .kitstrip img { width: 24px; height: 24px; }
+.wcard.on { z-index: 2; }
+.wcard.on::before { content: ""; position: absolute; left: -28px; right: -28px; top: -36px; height: 150px; background: var(--c-yellow); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; transform: rotate(-12deg); z-index: -1; }
+.wcard .squidcur { position: absolute; left: -26px; top: 70px; width: 34px; transform: rotate(-20deg); filter: drop-shadow(1px 2px 0 #000); }
+.pager { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
+.pager i { width: 9px; height: 9px; border-radius: 50%; background: #555; }
+.pager i.on { background: #fff; }
+.lr { position: absolute; top: 50%; width: 40px; height: 26px; margin-top: -13px; background: #2a2a2e; color: #fff; display: grid; place-items: center; font: 15px s1; box-shadow: 0 0 0 2px #000; z-index: 3; }
+.lr.l { left: -8px; clip-path: polygon(20% 0, 100% 0, 100% 100%, 20% 100%, 0 50%); }
+.lr.r { right: -8px; clip-path: polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%); }
+/* the picked weapon on the right: the black name tag, the weapon big, its kit */
+.picked { position: relative; padding-top: 4px; }
+.nametag { display: inline-block; background: #19191c; color: #fff; font: 30px/1 s1; padding: 10px 26px 12px 20px; transform: rotate(-1.5deg); box-shadow: 3px 3px 0 #000;
+           clip-path: polygon(0 4%, 100% 0, 99% 100%, 1% 96%); }
+.picked .big { width: 100%; height: 250px; display: grid; place-items: center; margin: 4px 0; }
+.picked .big img { max-width: 92%; max-height: 100%; object-fit: contain; filter: drop-shadow(4px 6px 0 rgba(0,0,0,.45)); }
+.kitline { display: flex; gap: 10px; flex-wrap: wrap; }
+.kitline .k2 { display: flex; align-items: center; gap: 8px; background: #19191c; padding: 4px 14px 4px 4px; border-radius: 999px; font-size: 16px; }
+.kitline .k2 span { width: 34px; height: 34px; border-radius: 50%; background: #1e1d33; display: grid; place-items: center; }
+.kitline .k2 img { width: 26px; height: 26px; }
+
+/* builds under the board: solid tag cards with seeded personality */
+.buildsec { margin-top: 30px; }
+.pins { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 24px !important; }
+.pins > :nth-child(even) { margin-top: 0 !important; }
+.bcard2 { position: relative; overflow: hidden; color: #000; transform: rotate(var(--tilt, 0deg)); }
+.bcard2 .ink { position: absolute; background: var(--k); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; pointer-events: none; z-index: 0; }
+.bcard2 > :not(.ink):not(.charm):not(.rank) { position: relative; z-index: 1; }
+.bcard2 .rank { z-index: 2; }
+.bcard2 .title h3 { text-shadow: none !important; color: #111; }
+.bcard2 .inner { background: rgba(15,15,20,.86) !important; }
+.bcard2 .prow { justify-content: flex-start; }
+.bcard2 .prow .sep { margin-left: auto; margin-right: 6px; }
+.bcard2 .btn { background: #111; color: #fff; } .bcard2 .btn.y { background: #fff; color: #111; }
+.bcard2 .rank { background: #111 !important; color: #fff !important; }
+.charm { position: absolute; z-index: 2; pointer-events: none; }
+.charm.tape { width: 70px; height: 22px; background: rgba(240,240,235,.7); clip-path: polygon(0 10%, 6% 0, 100% 0, 95% 50%, 100% 100%, 0 90%, 5% 50%); }
+.charm.sticker { width: 46px; height: 46px; }
+.charm svg { width: 100%; height: 100%; }
+
+/* ===================== v15: the header from Alex's sketch ===================== */
+#weapons.on { display: block !important; }
+html, body { overflow-x: hidden; }
+.hdr { position: relative; margin: 0 -48px; padding: 0 0 6px; }
+/* the arc of filter icons, centred over the strip; the picked one on a splat */
+.arc2 { position: relative; height: 70px; width: 640px; margin: 0 auto; }
+.arc2 .fi { position: absolute; width: 38px; height: 38px; border-radius: 50%; background: #2a2a2e; display: grid; place-items: center; box-shadow: 0 0 0 2px #000; transform: translate(-50%, 0); transition: transform 120ms var(--ease); }
+.arc2 .fi img { width: 28px; height: 28px; object-fit: contain; }
+.arc2 .fi.on { background: none; box-shadow: none; transform: translate(-50%, -4px) scale(1.3); z-index: 1; }
+.arc2 .fi.on::before { content: ""; position: absolute; inset: -10px; background: #8d8d93; -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; z-index: -1; }
+.arc2 .fi:active { transform: translate(-50%, 0) scale(.95); }
+/* the strip: Equip-style cards, the pick centred on a yellow splat, cut-off cards at both ends, yellow end caps */
+.strip3 { position: relative; height: 176px; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: pan-y; user-select: none; cursor: grab; }
+.strip3.drag { cursor: grabbing; }
+.strip3 .row { display: flex; gap: 14px; align-items: center; transition: transform 220ms var(--ease); }
+.cap3 { position: absolute; top: 50%; width: 64px; height: 84px; margin-top: -42px; z-index: 4; display: grid; place-items: center; background: none; transition: transform 120ms var(--ease); }
+.cap3.l { left: 18px; } .cap3.r { right: 18px; }
+.cap3 svg { width: 52px; height: 72px; filter: drop-shadow(3px 3px 0 #000); }
+.cap3.l svg { transform: scaleX(-1); }
+.strip3::before, .strip3::after { content: ""; position: absolute; top: 0; bottom: 0; width: 170px; z-index: 3; pointer-events: none; }
+.strip3::before { left: 0; background: linear-gradient(90deg, #111 30%, transparent); }
+.strip3::after { right: 0; background: linear-gradient(-90deg, #111 30%, transparent); }
+.cap3:active { transform: scale(.97); }
+.ecard { position: relative; flex: none; width: 134px; height: 148px; border-radius: 12px; background: linear-gradient(#ececea, #cfcfcb); box-shadow: 0 0 0 2px #3a3a3e, 0 3px 0 2px #000; transition: transform 160ms var(--ease), opacity 160ms var(--ease); }
+.ecard .art { position: absolute; left: 8px; right: 8px; top: 8px; height: 88px; display: grid; place-items: center; }
+.ecard .art img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(1px 2px 0 rgba(0,0,0,.25)); }
+.ecard .kitstrip { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; border-radius: 0 0 12px 12px; background: var(--c-yellow); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.ecard .kitstrip span { width: 33px; height: 33px; border-radius: 50%; background: #1e1d33; display: grid; place-items: center; }
+.ecard .kitstrip img { width: 25px; height: 25px; }
+.ecard.on { transform: scale(1.1); z-index: 2; }
+.ecard.on::before { content: ""; position: absolute; left: -34px; right: -34px; top: -44px; height: 168px; background: var(--c-yellow); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; transform: rotate(-10deg); z-index: -1; }
+.ecard.far { opacity: .55; }
+.sorttag2 { position: absolute; right: 120px; top: 2px; z-index: 5; display: flex; align-items: center; gap: 6px; }
+.sorttag2 .lbtn { width: 28px; height: 28px; border-radius: 50%; background: #2a2a2e; color: #fff; display: grid; place-items: center; font: 14px s1; box-shadow: 0 0 0 2px #000; }
+.sorttag2 .lbl { background: #111; color: #fff; padding: 3px 12px 4px; font: 17px s1; box-shadow: 0 0 0 2px #000; transform: rotate(-2deg); }
+.sorttag2:active { transform: scale(.985); }
+/* under the strip: the name on the left, builds on the right */
+.below { display: grid; grid-template-columns: 300px 1fr; gap: 30px; align-items: start; margin-top: 18px; }
+.below .nametag { font-size: 34px; }
+.below .kitline { margin-top: 14px; }
+.below .blabel { margin: 4px 0 18px; }
+.pins { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+/* build cards: splats anchored to corners/edges (cropped by the card), charms only in free zones */
+.bcard2 { color: var(--fg); }
+.bcard2 .title h3 { color: var(--fg) !important; }
+.bcard2 .ink { width: var(--s); height: calc(var(--s) * .64); transform: translate(-50%, -50%) rotate(var(--rot)) scaleX(var(--fx)); }
+.charm.zone-foot { left: 14px; bottom: 12px; top: auto !important; }
+.charm.zone-top { top: 0 !important; }
+
+
+/* ===== v16: header exactly per the sketch, narrow cards ===== */
+.hdr { margin: 0 auto !important; width: 940px; }
+.arc2 { width: 560px !important; }
+.strip3 { width: 940px; height: 150px !important; margin: 0 auto; cursor: grab; }
+.strip3::before, .strip3::after { display: none !important; }
+.strip3 .vp { position: relative; width: 744px; height: 100%; margin: 0 auto; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.strip3 .row { gap: 12px !important; }
+.ecard { width: 112px !important; height: 124px !important; box-shadow: 0 0 0 2px #3a3a3e !important; }
+.ecard .art { height: 70px !important; top: 6px !important; }
+.ecard .kitstrip { height: 40px !important; }
+.ecard .kitstrip span { width: 30px !important; height: 30px !important; } .ecard .kitstrip img { width: 22px !important; height: 22px !important; }
+.ecard.on { transform: none !important; }
+.ecard.on::before { left: -28px !important; right: -28px !important; top: -40px !important; height: 140px !important; }
+.ecard.far { opacity: 1 !important; }
+.cap3 { width: 56px !important; height: 70px !important; margin-top: -35px !important; }
+.cap3.l { left: 0 !important; } .cap3.r { right: 0 !important; }
+.cap3 svg { width: 40px !important; height: 58px !important; filter: none !important; }
+.sorttag2 { right: 92px !important; top: 60px !important; }
+.below { width: 940px; margin: 14px auto 0 !important; display: block !important; }
+.below .namerow { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; }
+.below .namerow .kitline { margin: 0 !important; }
+.below .namerow .blabel { margin: 0 0 0 auto !important; }
+.wbuilds { width: 940px; margin: 0 auto; }
+.pins { grid-template-columns: repeat(3, 296px) !important; justify-content: start; gap: 20px !important; }
+.bcard2 .prow { gap: 8px !important; }
+.bcard2 .prow .sep { margin-left: 0 !important; margin-right: 0 !important; }
+
+/* ===== v17: edge-to-edge strip, Splatoon 3 bead filter, weapon panel left, builds fill the width ===== */
+#weapons.screen { padding-left: 0; padding-right: 0; }
+.hdr { width: 100% !important; margin: 0 !important; }
+/* the filter: a chain of overlapping grey beads, the pick on a big grey splat with the squid pointing at it */
+.beads { position: relative; display: flex; justify-content: center; align-items: center; height: 92px; margin-top: 2px; }
+.bead { position: relative; width: 58px; height: 58px; margin-left: -12px; border-radius: 50%; background: #4a4a4e; display: grid; place-items: center; transform: translateY(var(--by, 0px)); transition: transform 120ms var(--ease); }
+.bead:first-child { margin-left: 0; }
+.bead img { width: 36px; height: 36px; object-fit: contain; position: relative; z-index: 1; }
+.bead.on { z-index: 2; background: none; }
+.bead.on::before { content: ""; position: absolute; left: -30px; right: -30px; top: -26px; bottom: -26px; background: #8f8f94; -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; }
+.bead.on img { width: 46px; height: 46px; }
+.bead .squidcur { position: absolute; left: -22px; bottom: -20px; width: 34px; transform: rotate(-30deg); z-index: 3; filter: none; }
+.bead:active { transform: translateY(var(--by, 0px)) scale(.95); }
+/* the strip runs edge to edge; chevrons sit in narrow gutters */
+.strip3 { width: 100% !important; }
+.strip3 .vp { width: auto !important; position: absolute !important; left: 64px; right: 64px; top: 0; bottom: 0; }
+.cap3.l { left: 6px !important; } .cap3.r { right: 6px !important; }
+.sorttag2 { right: 74px !important; top: 66px !important; }
+/* below: the weapon panel on the left, builds filling the rest */
+.below { width: auto !important; margin: 18px 0 0 !important; padding: 0 40px 0 34px; display: grid !important; grid-template-columns: 330px 1fr !important; gap: 34px; align-items: start; }
+.wpanel { position: sticky; top: 12px; background: #1b1a1f; padding: 22px 20px 24px; transform: rotate(-1deg);
+          clip-path: polygon(2% 1%, 30% 0, 60% 1.5%, 98% 0, 100% 30%, 99% 70%, 100% 99%, 70% 100%, 35% 98.5%, 1% 100%, 0 65%, 1% 30%); }
+.wpanel .nametag { font-size: 30px; }
+.wpanel .art2 { position: relative; height: 200px; display: grid; place-items: center; margin: 10px 0 8px; }
+.wpanel .art2::before { content: ""; position: absolute; inset: 6px 10px; background: var(--c-yellow); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; transform: rotate(-10deg); }
+.wpanel .art2 img { position: relative; max-width: 88%; max-height: 92%; object-fit: contain; }
+.wpanel .kitline { flex-direction: column; align-items: flex-start; gap: 8px; }
+.wbuilds2 .blabel { margin: 4px 0 18px !important; }
+.pins { grid-template-columns: repeat(auto-fill, minmax(296px, 1fr)) !important; }
+.bcard2 .inner { width: fit-content; margin: 0 auto; }
+.bcard2 .bfoot { justify-content: flex-end; }
+
+/* ===== v18 ===== */
+/* beads zig-zag ^v^v like the game */
+.bead .squidcur { left: -26px !important; bottom: -24px !important; width: 38px !important; transform: rotate(-35deg) !important; }
+/* the strip: chevrons hug the strip; the strip is never wider than the class (no weapon twice) */
+.strip3 { display: flex !important; align-items: center; justify-content: center; gap: 10px; }
+.strip3 .vp { position: relative !important; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; height: 150px; flex: none; width: var(--vpw) !important; }
+.strip3 .vp.cut { -webkit-mask: linear-gradient(90deg, transparent, #000 90px, #000 calc(100% - 90px), transparent); mask: linear-gradient(90deg, transparent, #000 90px, #000 calc(100% - 90px), transparent); }
+.cap3 { position: relative !important; left: auto !important; right: auto !important; top: auto !important; margin: 0 !important; flex: none; }
+.sorttag2 { right: auto !important; left: calc(50% + var(--vpw) / 2 - 120px) !important; top: 64px !important; }
+/* build cards: hug the gear panel with a thin border; white titles */
+.pins { grid-template-columns: repeat(auto-fill, 282px) !important; justify-content: start !important; gap: 18px !important; }
+.bcard2 { padding: 30px 9px 9px !important; }
+.bcard2 .inner { width: auto !important; margin: 0 !important; }
+.bcard2 .title { margin: 2px 4px 8px !important; }
+.bcard2 .title h3 { color: #fff !important; text-shadow: 2px 2px 0 rgba(0,0,0,.4) !important; }
+.bcard2 .bfoot { margin-top: 9px !important; min-height: 38px; }
+.bcard2 .rank { top: 8px !important; left: 10px !important; }
+/* the sticker charm: a real locker sticker from the game, a little crooked, in the empty footer corner */
+.bcard2 > .stk { position: absolute !important; left: 10px; bottom: 6px; width: 74px; height: 50px; z-index: 2; pointer-events: none; transform: rotate(var(--sr, 0deg)); }
+.stk img { width: 100%; height: 100%; object-fit: contain; object-position: left bottom; filter: drop-shadow(1px 1px 0 rgba(0,0,0,.35)); }
+
+/* ===== v19 ===== */
+/* the bead filter lives in the top bar, between the logo and the tabs */
+header { position: relative; z-index: 10; padding-bottom: 0 !important; }   /* above the screens: the Top builds label slides up under the tabs when the builds scroll */
+#beadslot { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 5; }
+#beadslot .beads { height: 76px; margin: 0; }
+#weapons.screen { padding-top: 6px !important; }
+/* the strip: a live track of bigger cards */
+.strip3 { height: 196px !important; }
+.strip3 .vp { height: 196px !important; overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none; }
+.strip3 .vp.drag { cursor: grabbing; }
+.track { position: absolute; left: 50%; top: 0; bottom: 0; width: 0; }
+.track .ecard { position: absolute !important; top: 28px; left: 0; width: 150px !important; height: 166px !important; will-change: transform; transition: none !important; }
+.track .ecard .art { height: 100px !important; top: 8px !important; }
+.track .ecard .kitstrip { height: 50px !important; }
+.track .ecard .kitstrip span { width: 38px !important; height: 38px !important; } .track .ecard .kitstrip img { width: 28px !important; height: 28px !important; }
+.track .ecard.on::before { left: -34px !important; right: -34px !important; top: -46px !important; height: 186px !important; }
+.track .ecard img { pointer-events: none; -webkit-user-drag: none; }
+.sorttag2 { top: 0 !important; left: calc(50% + var(--vpw) / 2 - 130px) !important; }
+/* the weapon panel: the splat bigger than the weapon, so it shows all the way round */
+.wpanel .art2 { height: 220px !important; }
+.wpanel .art2::before { inset: -6px -12px !important; }
+.wpanel .art2 img { max-width: 74% !important; max-height: 74% !important; }
+/* builds: exactly three across, a hair-thin border, a darker title shadow */
+.below { grid-template-columns: 330px auto !important; justify-content: start; }
+.pins { grid-template-columns: repeat(3, 280px) !important; gap: 16px !important; }
+.bcard2 .title h3 { font-size: 22px !important; white-space: nowrap; }
+.bcard2 { padding: 28px 6px 6px !important; }
+.bcard2 .title { margin: 2px 6px 7px !important; }
+.bcard2 .title h3 { text-shadow: 2px 2px 0 rgba(0,0,0,.75), 0 0 1px rgba(0,0,0,.6) !important; }
+.bcard2 .bfoot { margin: 7px 2px 0 !important; }
+
+/* ===== v20: Alex's ideal ===== */
+html, body { height: 100%; overflow: hidden !important; }
+body { display: flex; flex-direction: column; }
+header { flex: none; padding-top: 14px !important; }
+#weapons.screen.on { flex: 1; min-height: 0; display: flex !important; flex-direction: column; padding: 0 0 0 !important; }
+/* bead filter: centred in the top bar between two thin rules; icons fill their beads */
+#beadslot { top: 18px !important; display: flex; align-items: center; gap: 14px; }
+#beadslot::before, #beadslot::after { content: ""; width: 70px; height: 2px; background: #3a3a3e; }
+#beadslot .beads { height: 70px !important; }
+.bead { width: 50px !important; height: 50px !important; margin-left: -9px !important; }
+.bead img { width: 40px !important; height: 40px !important; }
+.bead.on img { width: 46px !important; height: 46px !important; }
+.bead.on::before { left: -24px !important; right: -24px !important; top: -20px !important; bottom: -20px !important; }
+/* strip: one cycle at most, chevrons at its ends, the cards on an arch */
+.hdr { flex: none; align-self: stretch !important; }
+.strip3 { height: 196px !important; gap: 44px !important; margin-bottom: -26px; }
+.cap3 { transform: translateY(26px); }
+.cap3:active { transform: translateY(26px) scale(.97) !important; }
+.strip3 .vp { margin: 0 !important; height: 196px !important; overflow: visible !important; -webkit-mask: none !important; mask: none !important; }
+.track .ecard { top: 40px !important; width: 116px !important; height: 128px !important; transform-origin: 50% 160%; }
+.track .ecard .art { height: 76px !important; top: 6px !important; }
+.track .ecard .kitstrip { height: 42px !important; }
+.track .ecard .kitstrip span { width: 32px !important; height: 32px !important; } .track .ecard .kitstrip img { width: 24px !important; height: 24px !important; }
+.track .ecard.on::before { left: -26px !important; right: -26px !important; top: -36px !important; height: 140px !important; }
+.sorttag2 { top: 22px !important; left: calc(50% + var(--vpw) / 2 - 80px) !important; }
+.sorttag2 .lbl { font-size: 15px !important; }
+/* below: the weapon on the left, the builds scrolling on their own on the right */
+.below { align-self: stretch !important; flex: 1; min-height: 0; padding: 4px 30px 0 30px !important; grid-template-columns: 330px 1fr !important; gap: 30px !important; align-items: stretch !important; }
+.wpanel { position: static !important; background: none !important; clip-path: none !important; transform: none !important; padding: 0 !important; display: flex; flex-direction: column; gap: 12px; }
+.archname { background: #121214; height: 92px; display: grid; place-items: center; }
+.archname svg { width: 100%; height: 100%; overflow: visible; }
+.archname text { font-family: s1; font-size: 34px; fill: #fff; }
+.artbox { position: relative; background: #121214; aspect-ratio: 1; display: grid; place-items: center; }
+.artbox::before { content: ""; position: absolute; inset: 10px; background: var(--c-yellow); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; transform: rotate(-12deg); }
+.artbox img { position: relative; max-width: 72%; max-height: 72%; object-fit: contain; }
+.kitbar { background: #121214; display: flex; justify-content: space-around; align-items: center; padding: 10px 6px; }
+.kitbar .k3 { display: flex; align-items: center; gap: 8px; font: 20px s2; }
+.kitbar .k3 span { width: 40px; height: 40px; border-radius: 50%; background: #1e1d33; display: grid; place-items: center; }
+.kitbar .k3 img { width: 30px; height: 30px; }
+.wbuilds2 { display: flex; flex-direction: column; min-height: 0; }
+.wbuilds2 .blabel { flex: none; margin: 0 0 4px !important; }
+.pinscroll { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 14px 40px 10px; }
+.pins { grid-template-columns: repeat(auto-fill, 280px) !important; justify-content: space-between !important; gap: 30px 26px !important; }
+.bcard2 { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--tilt, 0deg)) !important; }
+/* ===== the 1:2 split, exact ===== */
+.below { grid-template-columns: 1fr 2fr !important; gap: 30px !important; padding-bottom: 14px !important; }
+.wpanel { min-height: 0; }
+.artbox { aspect-ratio: auto !important; flex: 1; min-height: 0; }
+.artbox::before { inset: 14px 6% !important; }
+.pinscroll { scrollbar-width: none; }
+.pinscroll::-webkit-scrollbar { display: none; }
+.pins { grid-template-columns: repeat(3, 1fr) !important; justify-content: stretch !important; gap: 30px 26px !important; }
+.pins > .bcard2 { width: 280px; zoom: var(--z, 1); }
+/* narrower windows: the bead filter shrinks so it never runs into the logo or the tabs */
+@media (max-width: 1500px) {
+  #beadslot::before, #beadslot::after { display: none; }
+  .bead { width: 40px !important; height: 40px !important; margin-left: -8px !important; }
+  .bead img { width: 31px !important; height: 31px !important; }
+  .bead.on img { width: 36px !important; height: 36px !important; }
+}
+
+/* ===== v21 ===== */
+/* strip: lower, never clipped */
+.hdr, .strip3, .strip3 .vp { overflow: visible !important; }
+.hdr { margin-top: 18px; }
+.strip3 { height: 232px !important; margin-bottom: -64px !important; }
+.strip3 .vp { height: 232px !important; }
+.cap3 { transform: translateY(30px) !important; }
+.cap3:active { transform: translateY(30px) scale(.96) !important; }
+/* a card slot: the game's angled drop shadow (a skewed dark plate) behind the card */
+.track .slot { position: absolute; top: 34px; left: 0; width: 116px; height: 128px; will-change: transform, opacity; transform-origin: 50% 160%; cursor: inherit; }
+.track .slot .shade { position: absolute; inset: 0; border-radius: 12px; background: #000; opacity: .82; transform: translate(-9px, 11px) skewX(-10deg); }
+.track .slot .ecard { position: absolute !important; top: 0 !important; left: 0 !important; width: 116px !important; height: 128px !important; transform: none !important; }
+.track .slot.on .ecard::before { content: ""; position: absolute; left: -26px; right: -26px; top: -36px; height: 140px; background: var(--c-yellow); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; transform: rotate(-10deg); z-index: -1; animation: splatin 220ms cubic-bezier(.2,1.4,.4,1); }
+@keyframes splatin { from { transform: rotate(-10deg) scale(.6); opacity: 0; } to { transform: rotate(-10deg) scale(1); opacity: 1; } }
+.track img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
+/* more air around everything, same proportions */
+.below { padding: 30px 60px 22px !important; gap: 52px !important; }
+.wpanel { gap: 20px !important; }
+.artbox::before { inset: 26px 10% !important; }
+.artbox img { max-width: 64% !important; max-height: 64% !important; }
+.kitbar { padding: 16px 10px !important; }
+.wbuilds2 .blabel { margin: 0 0 10px !important; }
+.pinscroll { padding: 22px 22px 50px 18px !important; }
+.pins { gap: 44px 40px !important; }
+/* the name: straight words, each at its own slight angle, wrapping instead of getting cut */
+.archname { display: none !important; }
+.wordname { background: #121214; padding: 18px 20px 20px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 14px; min-height: 96px; }
+.wordname span { display: inline-block; font: 40px/1.05 s1; color: #fff; transform: rotate(var(--a)) translateY(var(--y)); }
+
+/* ===== v22 ===== */
+/* beads and strip clear of each other, both lower */
+#beadslot { top: 34px !important; }
+.hdr { margin-top: 70px !important; }
+.strip3 { margin-bottom: -96px !important; }
+/* builds: start higher, run to the bottom edge */
+.below { padding: 0 60px 0 !important; }
+.pinscroll { padding: 18px 22px 60px 18px !important; }
+/* the weapon panel: no boxes; a splat stage with a torn name label and stuck-on badges */
+.wpanel { position: relative !important; display: block !important; margin-bottom: 22px; }
+.wpanel > .wordname, .wpanel > .archname, .wpanel > .artbox, .wpanel > .kitbar { display: none !important; }
+.stage { position: absolute; inset: 0; }
+.stage .wink { position: absolute; left: 4%; right: 4%; top: 14%; bottom: 16%; background: var(--c-yellow); -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; transform: rotate(-12deg); }
+.stage .gun { position: absolute; left: 50%; top: 50%; width: 58%; height: 52%; object-fit: contain; transform: translate(-50%, -46%) rotate(-6deg); filter: drop-shadow(-10px 12px 0 rgba(0,0,0,.55)); }
+/* name: white words on a strip of black tape with torn ends, tilted, over the splat's top edge */
+.ntape { position: absolute; left: 2%; top: 3%; max-width: 88%; padding: 14px 34px 16px 30px; background: #000; transform: rotate(-4deg); clip-path: polygon(0 8%, 3% 0, 6% 10%, 9% 2%, 100% 0, 97% 22%, 100% 44%, 96% 66%, 100% 88%, 97% 100%, 4% 100%, 0 92%, 3% 70%, 0 48%, 3% 26%); display: flex; flex-wrap: wrap; gap: 0 14px; align-items: center; }
+.ntape span { display: inline-block; font: 44px/1.05 s1; color: #fff; transform: rotate(var(--a)) translateY(var(--y)); }
+/* sub: a round badge; special: a spiky burst; each with a small tilted tag */
+.kb { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.kb .disc { display: grid; place-items: center; background: #1e1d33; box-shadow: 0 0 0 4px #fff, -7px 9px 0 4px rgba(0,0,0,.5); border-radius: 50%; }
+.kb .disc img { width: 70%; height: 70%; object-fit: contain; }
+.kb .klbl { font: 20px s2; color: #fff; background: #000; padding: 3px 12px 4px; transform: rotate(var(--t)); white-space: nowrap; }
+.kb.ksub { left: 6%; bottom: 4%; --t: 3deg; }
+.kb.ksub .disc { width: 84px; height: 84px; transform: rotate(-8deg); }
+.kb.ksp { right: 5%; bottom: 2%; --t: -4deg; }
+.kb.ksp .burst { width: 128px; height: 128px; display: grid; place-items: center; background: #fff; clip-path: polygon(50% 0, 59% 16%, 75% 6%, 76% 24%, 94% 20%, 86% 37%, 100% 50%, 86% 63%, 94% 80%, 76% 76%, 75% 94%, 59% 84%, 50% 100%, 41% 84%, 25% 94%, 24% 76%, 6% 80%, 14% 63%, 0 50%, 14% 37%, 6% 20%, 24% 24%, 25% 6%, 41% 16%); transform: rotate(8deg); filter: drop-shadow(-7px 9px 0 rgba(0,0,0,.5)); }
+.kb.ksp .burst span { width: 82%; height: 82%; display: grid; place-items: center; background: #6a2bff; clip-path: inherit; }
+.kb.ksp .burst img { width: 62%; height: 62%; object-fit: contain; transform: rotate(-8deg); }
+.below { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) !important; }
+.ntape span { white-space: nowrap; }
+.wpanel { container-type: size; }
+.kb.ksub .disc { width: min(84px, 19cqw) !important; height: min(84px, 19cqw) !important; }
+.kb.ksp .burst { width: min(128px, 28cqw) !important; height: min(128px, 28cqw) !important; }
+.kb .klbl { font-size: min(20px, 4.4cqw) !important; }
+
+/* ===== v23 ===== */
+/* one scroll: the top (beads + strip) slides up under the logo row first, then the builds scroll */
+#weapons.screen.on { overflow: hidden; }
+#weapons .hdr { margin-top: calc(70px - var(--c, 0px)) !important; will-change: margin-top, opacity; }
+#beadslot { transform: translateX(-50%) translateY(calc(var(--c, 0px) * -1)) !important; }
+/* name: later lines indented, every word at its own small angle */
+.ntape span.ind1 { margin-left: 1.1em; }
+.pinscroll { -webkit-mask: linear-gradient(transparent 0, #000 22px); mask: linear-gradient(transparent 0, #000 22px); }
+
+/* ===== v24 ===== */
+/* the strip fades out early and the screen's top edge is soft, so nothing is cut off on the way up */
+#weapons.screen.on { -webkit-mask: linear-gradient(transparent 0, #000 26px); mask: linear-gradient(transparent 0, #000 26px); }
+/* the weapon panel is one tight group (name, splat, kit) centred in whatever height the panel has */
+.stage { display: flex; flex-direction: column; justify-content: center; }
+.stage .ntape { position: relative !important; left: auto !important; top: auto !important; align-self: flex-start; margin: 0 0 -3% 2%; z-index: 2; }
+.stage .wart { position: relative; width: 100%; aspect-ratio: 1.3; max-height: 58%; flex: none; }
+.stage .wart .wink { left: 0; right: 0; top: 0; bottom: 0; }
+.stage .kits { position: relative; display: flex; justify-content: space-between; align-items: flex-start; padding: 0 6%; margin-top: -9%; z-index: 2; }
+.stage .kits .kb { position: relative !important; left: auto !important; right: auto !important; bottom: auto !important; }
+.stage .kits .kb.ksp { margin-top: -4%; }
+/* builds: a thinner rim of card colour around the dark ability box */
+.pins > .bcard.bcard2 { padding-left: 7px !important; padding-right: 7px !important; padding-bottom: 10px !important; }
+.bcard2 .title { margin-left: 9px !important; margin-right: 9px !important; }
+.bcard2 .bfoot { padding-right: 6px; }
+
+/* ===== v25 ===== */
+/* a longer, softer exit: a 56px fade at the top edge, the strip easing out over most of its travel */
+#weapons.screen.on { -webkit-mask: linear-gradient(transparent 0, #000 56px) !important; mask: linear-gradient(transparent 0, #000 56px) !important; }
+/* the weapon panel: back to pinned pieces. The name rides the top, the splat and weapon keep one big size
+   and travel up with the panel, and the sub and special stay pinned near the bottom. */
+.stage { display: block !important; }
+.stage .ntape { position: absolute !important; left: 2% !important; top: 1% !important; margin: 0 !important; }
+.stage .wart { position: absolute !important; left: -2%; width: 104%; top: 74px; aspect-ratio: 1.25; max-height: none !important; }
+.stage .wart .gun { width: 60%; height: 56%; }
+.stage .kits { position: absolute !important; left: 0; right: 0; bottom: 2%; margin: 0 !important; padding: 0 5% !important; align-items: flex-end !important; }
+.stage .kits .kb.ksp { margin-top: 0 !important; margin-bottom: 1.5%; }
+.kb.ksub .disc { width: min(96px, 22cqw) !important; height: min(96px, 22cqw) !important; }
+.kb.ksp .burst { width: min(150px, 31cqw) !important; height: min(150px, 31cqw) !important; }
+.kb .klbl { font-size: min(24px, 5cqw) !important; }
+
+/* ===== v26 ===== */
+.stage .wart { top: 40px !important; }
+/* sub and special climb with the scroll; the special climbs 3% of the panel further */
+.stage .kits .kb.ksub { transform: translateY(calc(var(--c, 0px) * -.2)); }
+.stage .kits .kb.ksp { transform: translateY(calc(var(--c, 0px) * -.2 - var(--cf, 0) * 3cqh)); }
+
+/* ===== v27 =====
+   --e eases from 0 toward 1 with the whole scroll (1 - e^(-V / 0.75H)): it keeps creeping while the builds scroll.
+   The splat travels 3/4 of the panel's rise; the sub rises 0.1H, the special 1.5% of the panel further. The name is untouched. */
+.stage .wart { transform: translateY(calc(var(--c, 0px) - var(--H, 0px) * .75 * var(--e, 0))); }
+.stage .kits .kb.ksub { transform: translateY(calc(var(--H, 0px) * -.1 * var(--e, 0))) !important; }
+.stage .kits .kb.ksp { transform: translateY(calc(var(--H, 0px) * -.1 * var(--e, 0) - var(--e, 0) * 1.5cqh)) !important; }
+
+/* ===== v28 ===== */
+.stage .wart { top: 6px !important; }
+/* slimmer build cards: less air between the pieces */
+.pins > .bcard.bcard2 { padding-top: 28px !important; padding-bottom: 7px !important; }
+.bcard2 .title { gap: 3px !important; margin-top: 2px !important; margin-bottom: 5px !important; }
+.bcard2 .inner { padding-top: 3px !important; padding-bottom: 3px !important; gap: 0 !important; }
+.bcard2 .bfoot { margin-top: 6px !important; }
+.pins { row-gap: 32px !important; }
+
+/* ===== v29 =====
+   A slower glide (--e = 1 - e^(-V / 1.6H)) that now carries the name too: it ends where it did, just later.
+   Sub and special travel twice as far as v27. */
+.stage .ntape { transform: translateY(calc(var(--c, 0px) - var(--H, 0px) * var(--e, 0))) rotate(-4deg) !important; }
+.stage .kits .kb.ksub { transform: translateY(calc(var(--H, 0px) * -.2 * var(--e, 0))) !important; }
+.stage .kits .kb.ksp { transform: translateY(calc(var(--H, 0px) * -.2 * var(--e, 0) - var(--e, 0) * 3cqh)) !important; }
+
+/* ===== v30: the bucket has its own track, ending 5% of the panel further up than its splash ===== */
+.stage .wart .gun { transform: translate(-50%, calc(-46% - var(--e, 0) * 5cqh)) rotate(-6deg) !important; }
+
+/* ===== v31 ===== */
+/* splash and bucket end 5% of the panel lower than before (the bucket keeps its 5% lead) */
+.stage .wart { transform: translateY(calc(var(--c, 0px) - var(--H, 0px) * .75 * var(--e, 0) + var(--e, 0) * 2.5cqh)) !important; }
+/* the in-game drop shadow falls down and to the right */
+.stage .gun { filter: drop-shadow(10px 12px 0 rgba(0,0,0,.55)) !important; }
+/* the name: each word on its own scrap of torn black tape, so no wasted black */
+.stage .ntape { background: none !important; clip-path: none !important; padding: 0 !important; gap: 2px 0 !important; max-width: 92% !important; }
+.stage .ntape span { background: #000; padding: 8px 20px 10px 18px; margin-right: -4px;
+  clip-path: polygon(0 10%, 6% 0, 12% 8%, 100% 0, 96% 30%, 100% 62%, 95% 100%, 8% 100%, 0 88%, 4% 50%); }
+.stage .ntape span.ind1 { margin-left: 1.1em; }
+/* strip kit icons sit on the game's purple */
+
+/* build cards: drawn 252px wide (the ability rows end at 234px), slimmer inner padding */
+.pins > .bcard2 { width: 252px !important; }
+.bcard2 .inner { padding-left: 7px !important; padding-right: 7px !important; }
+
+/* ===== v32: once the top has collapsed, "Top builds" sits centred between the tab row and the first cards ===== */
+.wbuilds2 .blabel { transform: translateY(calc(var(--cf, 0) * -24px)); }
+/* the top-edge fade shrinks as the strip leaves (it's only there for the strip's exit), so the label stays crisp */
+#weapons.screen.on { -webkit-mask: linear-gradient(transparent 0, #000 calc(56px - var(--cf, 0) * 40px)) !important; mask: linear-gradient(transparent 0, #000 calc(56px - var(--cf, 0) * 40px)) !important; }
+
+/* ===== v33 ===== */
+.wbuilds2 .blabel h2 { font-size: 42px !important; }
+.wbuilds2 .blabel .sticker { font-size: 18px !important; }
+/* the squid cursor sits bottom-right of its bead and points up-right (mirrored) */
+.bead .squidcur { left: auto !important; right: -26px !important; transform: scaleX(-1) rotate(-35deg) !important; }
+
+/* ===== v34: once collapsed, the builds rise into the empty band beside "Top builds" =====
+   The scroll box climbs 98px with the collapse (--cf). Its mask is the union of
+   A) everything below the label's band (fading in over 22px), and
+   B) the band itself right of the label (fading in from the left and from the top). */
+.pinscroll { margin-top: calc(var(--cf, 0) * -98px) !important; position: relative; z-index: 0; }
+.wbuilds2 .blabel { position: relative; z-index: 1; }
+.pinscroll {
+  -webkit-mask: none !important;
+  mask-image: linear-gradient(#0000 0, #0000 calc(var(--cf, 0) * 64px), #000 calc(var(--cf, 0) * 64px + 22px)),
+              linear-gradient(90deg, #0000 0, #0000 410px, #000 470px),
+              linear-gradient(#0000 0, #000 22px) !important;
+  mask-size: 100% 100%, 100% calc(var(--cf, 0) * 86px + 1px), 100% calc(var(--cf, 0) * 86px + 1px) !important;
+  mask-position: 0 0, 0 0, 0 0 !important;
+  mask-repeat: no-repeat !important;
+  mask-composite: add, intersect, add !important;
+}
+
+/* ===== v35: collapsed, "Top builds" sits above the cards' top line instead of over them =====
+   The label rises 73px with the collapse (text ends ~98px), the builds' top edge is one straight line at ~104px
+   with a short fade. */
+.wbuilds2 .blabel { transform: translateY(calc(var(--cf, 0) * -73px)) !important; }
+.pinscroll { margin-top: calc(var(--cf, 0) * -94px) !important; }
+.pinscroll {
+  mask-image: linear-gradient(#0000 0, #000 calc(22px - var(--cf, 0) * 8px)) !important;
+  mask-size: 100% 100% !important;
+  mask-composite: add !important;
+}
+
+/* ===== v36: the collapsed label 12px higher ===== */
+.wbuilds2 .blabel { transform: translateY(calc(var(--cf, 0) * -85px)) !important; }
+/* The screen box clipped the risen label (overflow hidden, and its top-fade mask clips to the box).
+   Now it clips with clip-path, whose top opens 60px upward over the last 10% of the collapse (after the strip has faded),
+   and applyScroll drops the top-fade mask over that same last 10% (by then it's only a few px of nothing). */
+#weapons.screen.on { overflow: visible !important; clip-path: inset(calc(max(0, var(--cf, 0) - .9) * -600px) 0 0 0); }
+
+/* ===== v37 ===== */
+/* the picked bead's splat and the squid no longer swallow clicks meant for the beads either side */
+.bead.on::before, .bead .squidcur { pointer-events: none; }
+/* the squid sits bottom-left of the picked bead, pointing up-right at it */
+.bead .squidcur { left: -24px !important; right: auto !important; bottom: -22px !important; transform: rotate(38deg) !important; }
+/* the strip's splat marks the card under the middle live, fading between cards instead of popping */
+.track .slot .ecard::before { content: ""; position: absolute; left: -26px; right: -26px; top: -36px; height: 140px; background: var(--c-yellow);
+  -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat;
+  z-index: -1; opacity: 0; transform: rotate(-10deg) scale(.7); transition: opacity 140ms ease-out, transform 200ms cubic-bezier(.2,1.4,.4,1); }
+.track .slot.on .ecard::before { opacity: 1; transform: rotate(-10deg) scale(1); animation: none !important; }
+.track { perspective: none; }
+
+/* ===== v38: every sub and special icon's black parts are the game's purple #6039ff (SVG filter #ink) ===== */
+.kitstrip img, .kb img, img[src*="/subspe/"] { filter: url(#ink); }
+/* the chevrons sit above the cards, so a click on one is always a step */
+.strip3 .cap3 { position: relative; z-index: 300 !important; }
+
+/* ===== v39: the special's starburst takes the sub disc's dark ink, so the icon's purple parts read on it ===== */
+.kb.ksp .burst span { background: #3b3960 !important; }   /* v45: Alex's pick */
+
+/* ===== v46: the weapon wheel sits 20px closer to the class beads, and its cards have no drop shadow ===== */
+#weapons .hdr { margin-top: calc(50px - var(--c, 0px)) !important; }
+.track .slot .shade { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* The cursor tip stays beside the bead; the long axis points up-right. */
+.bead .bead-squid { position:absolute; width:74px; height:74px; left:-53px; bottom:-49px; pointer-events:none; z-index:3; }
+.bead-squid canvas { display:block; width:100%; height:100%; }
+/* The still squid matches the 3D model's resting pose (frame 0). */
+.bead-squid svg { position:absolute; left:47.4%; top:12.8%; width:38.6%; height:auto; }
+.bead-squid [hidden] { display:none; }
+/* v48 motion: the bead that loses the class splat keeps it while it shrinks away */
+.bead.was::before { content: ""; position: absolute; left: -24px; right: -24px; top: -20px; bottom: -20px; background: #8f8f94; pointer-events: none;
+  -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat; }
+@media (prefers-reduced-motion: no-preference) {
+  .bead { transition: transform 120ms var(--ease), background-color 180ms ease-out; }
+  .bead img { transition: width 200ms var(--ease), height 200ms var(--ease); }
+}
+/* v49 */
+.kb.ksp .burst span { width: 90%; height: 90%; }                       /* thinner white edge on the special burst */
+/* the beads sit on one dark chain: their circles are drawn on a layer melted together by #beadgoo */
+#beadslot .beads { isolation: isolate; }
+#beadslot .bead { background: none !important; }
+#beadslot .goo { position: absolute; inset: 0; z-index: -1; filter: url(#beadgoo); pointer-events: none; }
+#beadslot .goo i { position: absolute; border-radius: 50%; background: #4a4a4e; }
+/* proportions from Alex's capture: circles barely overlap, icons sit small inside them, the picked splat is bigger */
+#beadslot .bead { margin-left: -5px !important; }
+#beadslot .bead:first-child { margin-left: 0 !important; }
+#beadslot .bead img { width: 72% !important; height: 72% !important; }
+#beadslot .bead.on img { width: 92% !important; height: 92% !important; }
+#beadslot .bead.on::before, #beadslot .bead.was::before { left: -28px !important; right: -28px !important; top: -24px !important; bottom: -24px !important; }
+@media (max-width: 1500px) { #beadslot .bead { margin-left: -4px !important; } #beadslot .bead:first-child { margin-left: 0 !important; } }
+/* v50: the corner behind Save and Edit is inked in the card's rival team colour */
+.pins .bcard2 .bfoot { position: relative; z-index: 1; }
+/* the gear panel sits over the ink, and is solid now (the same colour its old 86% black made over the card),
+   so ink under it doesn't tint through. Specificity beats .bcard2 > :not(...) { z-index: 1 }. */
+.pins .bcard2 > .inner { z-index: 2 !important; background: color-mix(in srgb, rgb(15 15 20) 86%, var(--ink)) !important; }
+.pins .bcard2 .bfoot .btn { position: relative; }
+/* The corner is inked by a few separate paint-gun hits. They're drawn ONCE per build, already in the rival colour,
+   into one small bitmap (cornerInk() in the script, cached by build id) shown as this element's plain background.
+   No CSS mask: a mask gave every card its own GPU mask layers and pushed the buttons onto layers too (memory), and
+   many live mask layers made the page lag. Three big hits overlap across the button box (Save's left edge to the
+   card's right edge, panel to card bottom: 179 x 58 card px, right -16 / top -6 of the footer), each placed so the
+   solid patch gen_splats.py found in its core covers its third, so the box is always fully inked; smaller strays
+   land nearby. The element only spans what can show (the footer, plus the thin strips beside the panel): 262 x 116,
+   right -16 / top -60 of the footer. It fades in the first time a build's bitmap is drawn. */
+.pins .bcard2 .bfoot::before { content: ""; position: absolute; right: -16px; top: -60px; width: 262px; height: 116px; z-index: -1; pointer-events: none;
+  background: var(--inkimg) 0 0 / 100% 100% no-repeat; opacity: 0; transition: opacity 200ms ease-out; }
+.pins .bcard2.inked .bfoot::before { opacity: 1; }
+:root { --s0: url("../../../assets/splat_00.png"); --s1: url("../../../assets/splat_01.png"); --s2: url("../../../assets/splat_02.png"); --s3: url("../../../assets/splat_03.png"); --s4: url("../../../assets/splat_04.png"); --s5: url("../../../assets/splat_05.png"); --s6: url("../../../assets/splat_06.png"); --s7: url("../../../assets/splat_07.png"); --s8: url("../../../assets/splat_08.png"); --s9: url("../../../assets/splat_09.png"); --s10: url("../../../assets/splat_10.png"); --s11: url("../../../assets/splat_11.png"); }
+.pins .bcard2 .bfoot .btn, .pins .bcard2 .bfoot .btn.y { background: #fff; color: #111; }
+@media (prefers-reduced-motion: no-preference) {
+  #beadslot .goo i { transition: left 260ms var(--ease), top 260ms var(--ease), width 260ms var(--ease), height 260ms var(--ease); }
+  #beadslot .goo.snap i { transition: none; }
+}
+/* v51: splash and portrait grow 100% -> 120% with the scroll, on the curve that moves them (scale last, about their centre) */
+.stage .wart .wink { transform: translateY(3%) scale(calc(.95 + .05 * var(--e, 0))); }   /* splash: 95% at the top, 100% scrolled, a little lower (Alex) */
+.stage .wart .gun { transform: translate(-50%, calc(-46% - var(--e, 0) * 5cqh)) rotate(-6deg) scale(calc(1 + .2 * var(--e, 0))) !important; }
+/* v52: one of 16 prerendered banner splashes per weapon (parts/gen_splats.py banner) */
+.stage .wink.sk0, .wsp.sk0 { --spl: url("../../../assets/splash_00.png"); }
+.stage .wink.sk1, .wsp.sk1 { --spl: url("../../../assets/splash_01.png"); }
+.stage .wink.sk2, .wsp.sk2 { --spl: url("../../../assets/splash_02.png"); }
+.stage .wink.sk3, .wsp.sk3 { --spl: url("../../../assets/splash_03.png"); }
+.stage .wink.sk4, .wsp.sk4 { --spl: url("../../../assets/splash_04.png"); }
+.stage .wink.sk5, .wsp.sk5 { --spl: url("../../../assets/splash_05.png"); }
+.stage .wink.sk6, .wsp.sk6 { --spl: url("../../../assets/splash_06.png"); }
+.stage .wink.sk7, .wsp.sk7 { --spl: url("../../../assets/splash_07.png"); }
+.stage .wink.sk8, .wsp.sk8 { --spl: url("../../../assets/splash_08.png"); }
+.stage .wink.sk9, .wsp.sk9 { --spl: url("../../../assets/splash_09.png"); }
+.stage .wink.sk10, .wsp.sk10 { --spl: url("../../../assets/splash_10.png"); }
+.stage .wink.sk11, .wsp.sk11 { --spl: url("../../../assets/splash_11.png"); }
+.stage .wink.sk12, .wsp.sk12 { --spl: url("../../../assets/splash_12.png"); }
+.stage .wink.sk13, .wsp.sk13 { --spl: url("../../../assets/splash_13.png"); }
+.stage .wink.sk14, .wsp.sk14 { --spl: url("../../../assets/splash_14.png"); }
+.stage .wink.sk15, .wsp.sk15 { --spl: url("../../../assets/splash_15.png"); }
+.stage .wart .wink { -webkit-mask-image: var(--spl); mask-image: var(--spl); }
+/* v52: the picked circle is part of the picked splat (same grey, same pop-in / spin-out) */
+#beadslot .bead.on::before, #beadslot .bead.was::before {
+  -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat, radial-gradient(circle, #000 24.5px, transparent 25.5px) center / 100% 100% no-repeat;
+  mask: url("../../../assets/splat_full.png") center / contain no-repeat, radial-gradient(circle, #000 24.5px, transparent 25.5px) center / 100% 100% no-repeat; }
+/* v52: the search tape that drops from under the logo */
+.seek { position: absolute; z-index: 80; width: 320px; }
+.seek[hidden] { display: none; }
+.seekbar { background: #111; padding: 7px 16px 8px; rotate: -1.5deg; box-shadow: 3px 3px 0 #000; }
+.seek input { all: unset; display: block; width: 100%; font: 28px/1.15 s1; color: #fff; caret-color: var(--yellow); }
+.seek input.none { color: #8f8f94; }
+.seekres { list-style: none; margin: 10px 0 0 6px; padding: 0; display: grid; gap: 4px; }
+.seekres:empty { display: none; }
+.seekres li { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px 0 6px; background: rgba(17,17,17,.94); color: #fff; font: 17px/1 s2; border-radius: 6px; cursor: pointer; }
+.seekres li img { width: 48px; height: 34px; object-fit: contain; flex: none; }
+.seekres li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seekres li.hi { background: var(--yellow); color: #111; }
+/* v52: path zooms with the window */
+#path .pl { max-width: none !important; zoom: var(--zpl, 1); }
+#path.screen { padding-left: var(--side, 48px) !important; padding-right: var(--side, 48px) !important; }
+#path.screen.on { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4a4a4e transparent; }
+#path :is(.lane, .pclane) .track.grid { position: static; left: auto; top: auto; bottom: auto; width: auto; }
+#path .lane { grid-template-columns: 150px auto minmax(0, 1fr) !important; }
+#path .lnow { flex-direction: column; justify-content: center; gap: 16px; }   /* tall gear art (shirts, boots) hangs ~10px below its box */
+#path .lend { justify-self: end; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#path .lend .lcost { flex-direction: row; align-items: center; justify-self: auto; gap: 6px; }
+/* v52: saved states */
+.pins .bcard2 .bfoot .btn.on { background: #111 !important; color: #fff !important; }
+/* v52: Gear tab = your builds */
+#gear.screen { padding-left: var(--side, 48px) !important; padding-right: var(--side, 48px) !important; }
+#gear.screen.on { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4a4a4e transparent; }
+#gear .gl { zoom: var(--zpl, 1); }
+#gear .ghead, #settings .ghead { display: flex; align-items: center; gap: 18px; margin: 4px 0 22px; }
+#gear .ghead h1, #settings .ghead h1 { font: 42px/1 s1; margin: 0; text-shadow: 3px 3px 0 #000; }
+#gear .pins.mypins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 30px 26px !important; align-items: start; }
+#gear .mypins .rank { display: none; }
+.newb { display: grid; place-items: center; align-content: center; gap: 10px; min-height: calc(var(--bh, 300px)); border-radius: 18px; border: 3px dashed rgba(255,255,255,.35); color: #fff; font: 22px s1; transition: border-color 150ms var(--ease), transform 120ms var(--ease), background 150ms var(--ease); }
+.newb:hover { border-color: var(--yellow); background: rgba(255,255,255,.04); }
+.newb:active { transform: scale(.985); }
+.newb .plus { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--yellow); color: #000; font: 46px/1 s1; box-shadow: 3px 3px 0 #000; }
+#gear .bcard2 .bweap { position: absolute; z-index: 2; top: 8px; right: 6px; width: 54px; height: 54px; object-fit: contain; rotate: -8deg; filter: drop-shadow(2px 2px 0 rgba(0,0,0,.55)); pointer-events: none; }
+#gear .bcard2 .title { padding-right: 52px; }
+/* v52: path screen = one of your builds */
+.ptop { position: relative; }
+.pbuild { display: flex; align-items: center; gap: 18px; padding: 0; color: #fff; text-align: left; background: none; transition: transform 120ms var(--ease); }
+.pbuild:active { transform: scale(.99); }
+.pbuild:focus-visible { outline: none; }
+.pbuild:focus-visible h1 { text-decoration: underline 4px var(--yellow); text-underline-offset: 10px; }
+.pbuild .chev { width: 12px; height: 12px; margin: 0 2px 8px 2px; border-right: 4px solid currentColor; border-bottom: 4px solid currentColor; rotate: 45deg; transition: rotate 180ms var(--ease), color 150ms var(--ease); filter: drop-shadow(2px 2px 0 #000); }
+.pbuild:hover .chev, .pbuild[aria-expanded="true"] .chev { color: var(--yellow); }
+.pbuild[aria-expanded="true"] .chev { rotate: 225deg; margin-bottom: -4px; }
+.ppick { position: absolute; z-index: 30; top: calc(100% + 6px); left: -4px; width: 400px; zoom: calc(1 / var(--zpl, 1)); }   /* the page is zoomed; the tape isn't, as on the weapons screen */   /* the weapons screen's search tape, under the title */
+.ppick[hidden] { display: none; }
+.pseek { display: block; background: #111; padding: 7px 16px 8px; rotate: -1.5deg; box-shadow: 3px 3px 0 #000; }
+.pq { all: unset; display: block; width: 100%; font: 28px/1.15 s1; color: #fff; caret-color: var(--yellow); }
+.ppick.nohit .pq { color: #8f8f94; }
+.prows { margin: 10px 0 0 0; padding: 6px; border-radius: 10px; background: rgba(12,12,14,.86); display: grid; gap: 4px;   /* a dark plate: the weapons search reads on the dark page, this one would sit on the yellow card */
+  max-height: 352px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4a4a4e transparent; }
+.pbrow[hidden] { display: none; }
+.pbrow { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 10px 0 6px; background: #111; box-shadow: 3px 3px 0 #000; color: #fff; font: 17px/1 s2; border-radius: 6px; text-align: left; transition: background 120ms var(--ease); }
+.pbrow:hover { background: #262629; }
+.pbrow:focus-visible { outline: 2px solid var(--yellow); outline-offset: -2px; }
+.pbrow.on .pt { color: var(--yellow); }
+.pbrow.hi, .pbrow.hi:hover { background: var(--yellow); color: #111; box-shadow: 0 0 0 2px #111, 3px 3px 0 #000; }   /* the ring keeps it apart from the yellow card under it */
+.pbrow.hi .pt { color: #111; }
+.pbrow .pw { width: 48px; height: 34px; object-fit: contain; flex: none; }
+.pbrow .pt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbrow .pg { display: flex; gap: 2px; flex: none; }
+.pbrow .pg img { width: 30px; height: 30px; object-fit: contain; }
+.pempty { display: grid; place-items: center; padding: 80px 0; }
+.pempty .newb { width: 300px; min-height: 300px; }
+/* the Up next card wears the cards' ink */
+.next { overflow: hidden; }
+.next .ink { position: absolute; z-index: 0; width: var(--s); height: calc(var(--s) * .64); background: var(--k); pointer-events: none;
+  -webkit-mask: url("../../../assets/splat_full.png") center / contain no-repeat; mask: url("../../../assets/splat_full.png") center / contain no-repeat;
+  transform: translate(-50%, -50%) rotate(var(--rot)) scaleX(var(--fx)); }
+.next > .flow, .next > div, .next > .badges { position: relative; z-index: 1; }
+.next .ribbon { z-index: 2; }
+.unbattles { display: flex; align-items: center; gap: 14px; margin-top: 10px; color: #000; font-size: 18px; }
+.unbattles b { font: 22px s1; font-weight: normal; }
+.ubar { width: 220px; height: 12px; border-radius: 6px; background: rgba(0,0,0,.18); overflow: hidden; }
+.ubar i { display: block; height: 100%; background: #000; border-radius: 6px; }
+.blob.wb::before { display: none; }
+.blob.wb .wsp { position: absolute; inset: -6% -8%; background: var(--c-yellow); -webkit-mask: var(--spl) center / contain no-repeat; mask: var(--spl) center / contain no-repeat; rotate: -8deg; }
+/* Gear tab search: the same tape, beside the heading (parts/gearpage.js) */
+.gseek { width: 380px; margin-left: 12px; }
+.gseek[hidden] { display: none; }
+.gseek input { all: unset; display: block; width: 100%; font: 28px/1.15 s1; color: #fff; caret-color: var(--yellow); }
+.gseek input.none { color: #8f8f94; }
+#gear .mypins > [hidden] { display: none !important; }
+#gear .mypins .bcard2 { cursor: pointer; }
+.next .ustack { display: grid; padding: 12px 14px; margin: -12px -14px;   /* each flipping slot is a window: a page dragged or */
+  -webkit-mask: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent);   /* turning slides out of it */
+  mask: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent); }       /* instead of over the bar and badges */
+.next .ustack > .upg { grid-area: 1 / 1; }
+.next .ustack > .upg:not(.on) { opacity: 0; visibility: hidden; }
+.next .flow.ustack > .upg { display: flex; align-items: center; gap: 14px; }
+.next .ustep { justify-items: end; }
+.next > .udots { position: absolute; z-index: 2; left: 8px; top: 50%; translate: 0 -50%; display: flex; flex-direction: column; }
+.udot { width: 18px; height: 18px; display: grid; place-items: center; padding: 0; background: none; }
+.udot::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--blue) 35%, transparent); transition: background 200ms var(--ease), scale 200ms var(--ease); }
+.udot:hover::before { background: color-mix(in srgb, var(--blue) 65%, transparent); }
+.udot.on::before { background: var(--blue); scale: 1.3; }
+.next:has(.udots) { cursor: grab; user-select: none; touch-action: pan-x; }
+.next.dragging { cursor: grabbing; }
+#weapons .sorttag2 { top: 2px !important; }
+.track.grid .step.ph .phdot { width: 9px; height: 9px; border-radius: 50%; background: #5a5a5a; }

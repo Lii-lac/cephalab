@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gear seeds</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0e1220; --card: #182038; --card2: #1f2945; --line: #2b3657; --text: #e8ebf5; --dim: #8791b0;
+    --accent: #c6f432; --hit: #ff7ad9; --well: #0b0f1c;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: var(--s5); background: var(--bg); color: var(--text);
+         font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  img { display: block; }
+  header { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s5); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); transition: background .4s; }
+  .dot.ok { background: var(--accent); } .dot.error { background: #f2545b; }
+  .chip { padding: 2px var(--s2); border-radius: 999px; background: var(--card2); color: var(--dim); font-size: 12px; }
+  #filter { margin-left: auto; width: 200px; padding: var(--s2) var(--s3); background: var(--card); border: 1px solid var(--line);
+            border-radius: 999px; color: var(--text); font: inherit; }
+
+  /* ability / gear circles */
+  .ab { border-radius: 50%; background: var(--well); display: grid; place-items: center; flex: none; }
+  .ab img { width: 82%; height: 82%; }
+  .ab.empty { background: transparent; border: 2px dashed var(--line); }
+  .a40 { width: 40px; height: 40px; } .a28 { width: 28px; height: 28px; } .a24 { width: 24px; height: 24px; }
+  .gearpic { width: 56px; height: 56px; border-radius: 50%; background: var(--card2); display: grid; place-items: center; flex: none; }
+  .gearpic img { width: 92%; height: 92%; object-fit: contain; }
+
+  /* recent rolls */
+  #log { display: flex; gap: var(--s2); flex-wrap: wrap; margin-bottom: var(--s5); min-height: 44px; }
+  .ev { display: flex; align-items: center; gap: var(--s1); padding: var(--s1) var(--s2) var(--s1) var(--s1); background: var(--card);
+        border-radius: 999px; animation: in .5s ease; }
+  .ev .gearpic { width: 32px; height: 32px; }
+  .ev .t { color: var(--dim); font-size: 11px; margin-left: var(--s1); }
+  .arrow { color: var(--dim); }
+  @keyframes in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  /* gear cards */
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: var(--s3); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: var(--s3); cursor: pointer;
+          transition: border-color .4s, background .2s; }
+  .card:hover { background: var(--card2); }
+  .card.fresh { border-color: var(--accent); }
+  .row { display: flex; align-items: center; gap: var(--s2); }
+  .main { margin-right: var(--s1); }
+  .next { display: flex; gap: var(--s1); margin-top: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line); }
+  .next .ab { opacity: .9; }
+  .next .ab:first-child { opacity: 1; box-shadow: 0 0 0 2px var(--line); }
+
+  /* detail drawer */
+  #shade { position: fixed; inset: 0; background: #0008; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  #shade.on { opacity: 1; pointer-events: auto; }
+  #drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: var(--card); border-left: 1px solid var(--line);
+            padding: var(--s5); overflow-y: auto; transform: translateX(100%); transition: transform .25s ease; }
+  #drawer.on { transform: none; }
+  .dhead { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s5); }
+  .dhead .gearpic { width: 72px; height: 72px; }
+  .seed { font: 12px ui-monospace, Consolas, monospace; color: var(--dim); }
+  .drinks { display: flex; flex-wrap: wrap; gap: var(--s1); margin-bottom: var(--s5); }
+  .drinks button { padding: 2px; border: 2px solid transparent; border-radius: 50%; background: none; cursor: pointer; transition: border-color .2s, opacity .2s; opacity: .55; }
+  .drinks button.on { border-color: var(--hit); opacity: 1; }
+  .drinks button:hover { opacity: 1; }
+  .none { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--dim); position: relative; }
+  .none::after { content: ""; position: absolute; left: 50%; top: 2px; bottom: 2px; width: 2px; background: var(--dim); transform: rotate(45deg); }
+  .rolls { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--s2); }
+  .roll { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .roll small { color: var(--dim); font-size: 10px; }
+  .roll.hit .ab { box-shadow: 0 0 0 2px var(--hit); }
+</style>
+</head>
+<body>
+<header>
+  <div class="dot" id="dot" title=""></div>
+  <span class="chip" id="ver"></span>
+  <input type="search" id="filter" placeholder="Search" autocomplete="off">
+</header>
+
+<div id="log"></div>
+<div id="grid"></div>
+
+<div id="shade"></div>
+<aside id="drawer"></aside>
+
+<script>
+const $ = id => document.getElementById(id);
+const hash = new URLSearchParams(location.hash.slice(1));
+let state = null, open = hash.get("open"), drink = hash.get("drink") || "", abilities = [], names = {};
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ago = t => { const s = Math.round(Date.now() / 1000 - t);
+  return s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : `${Math.round(s / 3600)}h`; };
+const ab = (id, size = 40) => id
+  ? `<div class="ab a${size}" title="${esc(names[id] || id)}"><img src="/img/skill/${id}.png" alt="" loading="lazy"></div>`
+  : `<div class="ab a${size} empty"></div>`;
+const gearpic = g => `<div class="gearpic" title="${esc(g.name)} · ${esc(g.brand_name)}"><img src="/img/gear/${g.row}.png" alt="" loading="lazy" onerror="this.remove()"></div>`;
+
+function renderStatus(st) {
+  $("dot").className = "dot " + (st.state === "ok" ? "ok" : st.state === "error" ? "error" : "");
+  $("dot").title = st.state === "ok" ? `Live · read ${st.last_read ? ago(st.last_read) + " ago" : ""}` : (st.message || st.state);
+  $("ver").textContent = st.version || "–";
+}
+
+function renderLog(log) {
+  const byKey = Object.fromEntries((state?.gear || []).map(g => [g.key, g]));
+  $("log").innerHTML = log.slice(0, 8).map(e => {
+    const g = byKey[e.key]; if (!g) return "";
+    const now = e.slots.map(s => s.now_id || "").filter(Boolean);
+    return `<div class="ev" title="${esc(e.name)} · ${e.new_seed}">${gearpic(g)}<span class="arrow">›</span>${now.map(a => ab(a, 28)).join("") || ab("", 28)}<span class="t">${ago(e.t)}</span></div>`;
+  }).join("");
+}
+
+function renderGrid() {
+  if (!state) return;
+  const f = $("filter").value.trim().toLowerCase();
+  const fresh = Date.now() / 1000 - 600;
+  $("grid").innerHTML = state.gear.filter(g => !f || [g.name, g.brand_name, g.main_name, ...g.sub_names].join(" ").toLowerCase().includes(f))
+    .map(g => `<div class="card${g.changed && g.changed > fresh ? " fresh" : ""}" data-key="${g.key}">
+      <div class="row">${gearpic(g)}<div class="main">${ab(g.main)}</div>${g.subs.map(s => ab(s)).join("")}</div>
+      <div class="next">${g.next.map(r => ab(r.ability, 28)).join("")}</div></div>`).join("");
+}
+
+async function renderDrawer() {
+  if (!open || !state) { $("drawer").classList.remove("on"); $("shade").classList.remove("on"); return; }
+  const g = state.gear.find(x => x.key === open); if (!g) return;
+  const r = await fetch(`/api/predict?key=${encodeURIComponent(open)}&drink=${drink}&n=40`).then(r => r.json()).catch(() => null);
+  $("drawer").innerHTML = `
+    <div class="dhead">${gearpic(g)}<div class="main">${ab(g.main)}</div>${g.subs.map(s => ab(s)).join("")}</div>
+    <div class="seed" style="margin-bottom:16px">${g.seed_hex}</div>
+    <div class="drinks">
+      <button data-d="" class="${drink ? "" : "on"}" title="No drink"><div class="none"></div></button>
+      ${abilities.map(a => `<button data-d="${a.id}" class="${a.id === drink ? "on" : ""}">${ab(a.id, 28)}</button>`).join("")}
+    </div>
+    <div class="rolls">${(r?.rolls || []).map(x => `<div class="roll${x.drink_hit ? " hit" : ""}">${ab(x.ability, 40)}<small>${x.n}</small></div>`).join("")}</div>`;
+  $("drawer").classList.add("on"); $("shade").classList.add("on");
+}
+
+function setHash() { history.replaceState(null, "", open ? `#open=${open}${drink ? "&drink=" + drink : ""}` : location.pathname); }
+
+$("grid").addEventListener("click", e => { const c = e.target.closest(".card"); if (!c) return; open = c.dataset.key; setHash(); renderDrawer(); });
+$("drawer").addEventListener("click", e => { const b = e.target.closest("button[data-d]"); if (!b) return; drink = b.dataset.d; setHash(); renderDrawer(); });
+$("shade").addEventListener("click", () => { open = null; setHash(); renderDrawer(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && open) { open = null; setHash(); renderDrawer(); } });
+$("filter").addEventListener("input", renderGrid);
+
+let lastSig = "";
+async function tick() {
+  try {
+    const s = await fetch("/api/state").then(r => r.json());
+    abilities = s.abilities; names = Object.fromEntries(s.abilities.map(a => [a.id, a.name]));
+    s.gear.forEach(g => { names[g.main] = g.main_name; });
+    state = s;
+    renderStatus(s.status);
+    const sig = JSON.stringify(s.gear.map(g => [g.key, g.seed, g.subs, g.changed]));
+    if (sig !== lastSig) { lastSig = sig; renderGrid(); if (open) renderDrawer(); }
+    renderLog(s.log);
+  } catch {
+    $("dot").className = "dot error"; $("dot").title = "Tracker isn't running";
+  }
+}
+tick(); setInterval(tick, 3000);
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cephalab</title>
+<link rel="stylesheet" href="/src/styles/fonts.css">
+<link rel="stylesheet" href="/src/styles/tokens.css">
+<link rel="stylesheet" href="/src/styles/v52.css">
+<link rel="stylesheet" href="/src/styles/live.css">
+</head>
+<body>
+<header>
+  <div class="logo">Cepha<span>lab</span></div>
+  <div class="seek" id="seek" hidden><div class="seekbar"><input id="seekin" aria-label="Search weapons" autocomplete="off" spellcheck="false"></div><ol class="seekres"></ol></div>
+  <nav class="tabs">
+    <button class="tab press" data-s="gear">Gear</button>
+    <button class="tab on press" data-s="weapons">Weapons</button>
+    <button class="tab press" data-s="builds">Path</button>
+  </nav>
+  <div id="beadslot"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="beadgoo" x="-10%" y="-60%" width="120%" height="220%">
+    <feGaussianBlur stdDeviation="4"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"/></filter></svg>
+  <div class="switch"><i></i><span>Switch</span></div>
+  <button class="cog press" id="cog" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><i class="cog-dot"></i></button>
+</header>
+<section class="screen on" id="weapons"></section>
+<section class="screen" id="editor"></section>
+<section class="screen" id="path"></section>
+<section class="screen" id="gear"></section>
+<section class="screen" id="settings"></section>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- The body is traced in the displayed pose. No CSS rotation is needed. -->
+    <linearGradient id="beadsquid-ink" gradientUnits="userSpaceOnUse" x1="311" y1="62" x2="170" y2="218">
+      <stop stop-color="#eeff40"/>
+      <stop offset=".46" stop-color="#e7ff37"/>
+      <stop offset=".78" stop-color="#deff2e"/>
+      <stop offset="1" stop-color="#dcfa2e"/>
+    </linearGradient>
+    <path id="beadsquid-body" d="M317 55
+      C325 53 329 57 329 66 C330 86 324 119 321 137
+      C317 157 312 175 305 187 C301 195 295 198 287 195
+      C279 192 272 187 264 182 C261 188 252 193 245 198
+      C237 204 233 213 229 223 C224 236 216 244 203 243
+      C195 243 191 238 194 230 C187 235 181 240 174 238
+      C168 237 167 231 171 223 C165 225 159 226 156 222
+      C152 218 156 209 160 202 C152 204 147 200 148 193
+      C149 181 162 168 175 160 C189 151 199 142 205 127
+      C200 122 193 111 191 104 C188 95 195 89 206 84
+      C225 75 249 70 270 65 C287 61 302 59 317 55Z"/>
+    <path id="beadsquid-eyes" d="M249 90
+      C259 90 267 98 270 106 C272 111 271 115 269 120
+      C277 115 286 118 292 123 C300 129 300 139 296 149
+      C290 161 279 171 269 174 C260 177 250 173 245 166
+      C241 160 241 151 243 143 C236 147 227 145 221 141
+      C213 136 212 127 215 118 C218 106 228 96 239 92
+      C242 91 245 90 249 90Z"/>
+    <symbol id="beadsquid-squid" viewBox="142 49 193 200">
+      <use href="#beadsquid-body" transform="translate(-1.5 2.5)" fill="#151810" opacity=".72"/>
+      <use href="#beadsquid-body" fill="url(#beadsquid-ink)" stroke="#a6b518" stroke-width="1.65"/>
+      <use href="#beadsquid-eyes" transform="translate(-3.5 4.4)" fill="#201f19" stroke="#201f19" stroke-width="2.1"/>
+      <use href="#beadsquid-eyes" fill="#fffefd" stroke="#25231b" stroke-width="1.7" stroke-linejoin="round"/>
+      <ellipse cx="249" cy="111.1" rx="11.1" ry="13.4" transform="rotate(31 249 111.1)" fill="#21191c"/>
+      <ellipse cx="275.5" cy="137.3" rx="11.8" ry="13.1" transform="rotate(43 275.5 137.3)" fill="#21191c"/>
+    </symbol>
+  </defs>
+</svg>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ink" color-interpolation-filters="sRGB">
+  <!-- dark pixels -> #6039ff, with alpha = how dark they are (anything lighter than ~mid-grey is left alone) -->
+  <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 .3765  0 0 0 0 .2235  0 0 0 0 1  -1.4 -1.4 -1.4 1 .25" result="dark"/>
+  <feComposite in="dark" in2="SourceAlpha" operator="in" result="darkin"/>
+  <feComposite in="darkin" in2="SourceGraphic" operator="over"/>
+</filter></svg>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

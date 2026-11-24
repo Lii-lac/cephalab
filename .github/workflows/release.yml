@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build web app
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set up Python companion and s3s
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .venv\Scripts\python.exe -m pip install -q --upgrade pip pyinstaller
+          .venv\Scripts\python.exe tools\setup_s3s.py
+
+      - name: Run companion unit tests
+        shell: pwsh
+        run: .venv\Scripts\python.exe -m unittest tests.companion.test_companion
+
+      - name: Build cephalab.exe
+        shell: pwsh
+        run: |
+          .venv\Scripts\python.exe tools\build_exe.py
+          $hash = (Get-FileHash -Algorithm SHA256 dist\cephalab.exe).Hash.ToLower()
+          "$hash  cephalab.exe" | Set-Content -Encoding ascii dist\SHA256SUMS.txt
+
+      - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $pre = @()
+          if ($tag -match "^v0\.|-") { $pre = @("--prerelease") }
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag dist\cephalab.exe dist\SHA256SUMS.txt --title "Cephalab $tag" --generate-notes @pre
+          } else {
+            gh release upload $tag dist\cephalab.exe dist\SHA256SUMS.txt --clobber
+          }

@@ -1,0 +1,20 @@
+{
+  "name": "cephalab-web",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "build:static": "tsc --noEmit && vite build --mode static && ..\\.venv\\Scripts\\python.exe ..\\tools\\build_static.py"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
+    "typescript": "~5.9",
+    "vite": "^8.3.8"
+  }
+}

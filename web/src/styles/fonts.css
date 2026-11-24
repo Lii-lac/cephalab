@@ -1,0 +1,3 @@
+/* the game fonts (assets/) */
+@font-face { font-family: s1; src: url("../../../assets/Splatoon1-common.woff2") format("woff2"); }
+@font-face { font-family: s2; src: url("../../../assets/Splatoon2-common.woff2") format("woff2"); }

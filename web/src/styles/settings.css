@@ -1,0 +1,206 @@
+/* Settings mockup, after Splatoon 3's Options menu: a grey board from under the header to a bottom margin equal to the side
+   margin (display.ts sets --boardh); torn black category stickers on it (the chosen one lime, with ink corner marks and a
+   tail), one grey paper panel of dark slab rows, the credits as a hint on the board's bottom edge. Lime only ever means
+   "chosen" / "on". Sizes inside the board and the paper scale with their height (container units, clamped), so a short
+   window shrinks the rows instead of scrolling and a tall one fills. No glow or glass; the game's surface texture (grain, mottling, ghosted clippings, printed patterns) is SVG noise and
+   the app's own assets. */
+.st-page { --lime: var(--yellow); --si-1: 8px; --si-2: 16px; --si-3: 24px;   /* signin.css spaces its .si-* parts with these */
+  --torn: polygon(1% 7%, 10% 2%, 19% 6%, 31% 1%, 44% 5%, 58% 0, 71% 4%, 85% 1%, 99% 5%, 100% 38%, 98.6% 66%, 100% 95%, 88% 99%, 76% 95%, 62% 100%, 48% 96%, 34% 100%, 21% 95%, 9% 99%, 0 94%, 1.4% 62%, 0 32%);
+  --slab: polygon(0 5%, 22% 1%, 47% 4%, 74% 0, 100% 3%, 99.6% 52%, 100% 97%, 71% 100%, 44% 96%, 18% 100%, 0 97%, .4% 50%);
+  --chip: polygon(2% 6%, 30% 0, 62% 5%, 98% 0, 100% 48%, 97% 100%, 55% 95%, 22% 100%, 0 94%, 1% 45%);
+  /* the game's surfaces are never flat: fine grain (dark and light specks) and slow mottling, all drawn as SVG noise */
+  --grain-d: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0 0 0 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-l: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.4 0 0 0 -0.17'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --mottle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.45 0 0 0 -0.17'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --pat-lime: url("../../../assets/battle-bg-pattern-yellow.jpg");
+  --pat-dark: url("../../../assets/battle-bg-pattern-dark.png"); }
+#settings.screen.on { padding-top: 16px; padding-bottom: 0; }
+.st-end { margin-left: auto; }
+.st-fade { transition: opacity 120ms var(--ease); }
+.st-fade.out { opacity: 0; }
+.st-page [hidden] { display: none !important; }
+
+/* ---- the board ---------------------------------------------------------------------------------------------------- */
+.st-menu { position: relative; isolation: isolate; height: var(--boardh, auto); --k: 1; display: flex; gap: 40px; padding: 24px 24px 32px 16px; }
+.st-menu::before { content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--grain-l) 0 0 / 256px, var(--grain-d) 40px 70px / 256px, var(--mottle) 0 0 / 900px, #454545;
+  clip-path: polygon(0 1%, 30% 0, 62% .8%, 100% 0, 99.8% 50%, 100% 99%, 70% 100%, 35% 99.2%, 0 100%, .2% 50%); }
+
+/* the category stickers: big, spaced like the game's left column */
+.st-cats { flex: none; width: 312px; display: flex; flex-direction: column; gap: calc(24px * var(--k)); padding: calc(24px * var(--k)) 0 0 24px; }   /* short: the column never sets the board's height over a page */
+.st-cat { position: relative; isolation: isolate; height: calc(96px * var(--k)); padding: 0 28px; font: calc(30px * var(--k))/1.1 s1, sans-serif; letter-spacing: .02em;
+  color: #f4f4f4; transform: rotate(var(--r, 0deg)); transition: transform 200ms var(--ease), color 160ms var(--ease); }
+.st-cat::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--grain-l) 0 0 / 256px, #1c1c1c; clip-path: var(--torn); transition: background-color 160ms var(--ease); }
+.st-cat[data-cat=data]::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='64'%3E%3Crect x='4' y='4' width='112' height='56' fill='%23202020'/%3E%3Cg stroke='%23282828' stroke-width='3'%3E%3Cpath d='M14 14v30M20 14v30M27 14v30M31 14v30M38 14v30M45 14v30M49 14v30M56 14v30M63 14v30M67 14v30M74 14v30M81 14v30M85 14v30M92 14v30M99 14v30M103 14v30'/%3E%3C/g%3E%3Cg fill='%23272727'%3E%3Crect x='14' y='49' width='60' height='4'/%3E%3C/g%3E%3C/svg%3E") right 6px center / 112px no-repeat, var(--grain-l) 0 0 / 256px, #1c1c1c; }
+.st-cat[data-cat=data]::before { transform: scaleX(-1); }
+@media (hover: hover) and (pointer: fine) { .st-cat:not(.on):hover::before { background: #2b2b2b; } }
+.st-cat.on { color: #111; transform: rotate(var(--r, 0deg)) scale(1.08); z-index: 1; cursor: default; }
+.st-cat.on::before { background: var(--lime); }            /* the game's chosen sticker is clean lime: no grain */
+.st-frame { position: absolute; inset: 9px 12px; border: 2px solid #111; opacity: 0; pointer-events: none; transition: opacity 160ms var(--ease);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23111' d='M0 0h18l-5 3 3 4-6 0 1 6-4-3-2 5-1-6-4 2z'/%3E%3C/svg%3E") -2px -2px / 26px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23111' transform='rotate(180 10 10)' d='M0 0h18l-5 3 3 4-6 0 1 6-4-3-2 5-1-6-4 2z'/%3E%3C/svg%3E") right -2px bottom -2px / 26px no-repeat;
+  background-origin: border-box; }
+.st-cat.on .st-frame { opacity: 1; }
+/* the chosen sticker is pasted over its own dark sticker, which stays where it was and peeks out (the game's look) */
+.st-cat::after { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--grain-l) 0 0 / 256px, #1c1c1c; clip-path: var(--torn);
+  transform: scale(.95) rotate(calc(-1 * var(--r, 0deg) + 2deg)) translate(-16px, 12px); opacity: 0; transition: opacity 160ms var(--ease); }
+.st-cat.on::after { opacity: 1; }
+/* our squid (beadsquid.ts, the one on the Weapons beads) sits off the chosen sticker's bottom-left corner, its head at the
+   corner pointing in; a notch deeper than the lime sticker so its edge reads where they touch */
+.st-cat .bead-squid { position: absolute; width: 124px; height: 124px; left: -98px; bottom: -100px; pointer-events: none; z-index: 3; filter: brightness(.84) saturate(1.15); }
+.st-cat:focus-visible { outline: 2px solid #fff; outline-offset: 6px; }
+
+/* the credits: one quiet line on a black strip across the board's bottom edge */
+.st-credits { position: absolute; left: 40px; bottom: -14px; z-index: 1; margin: 0; padding: 6px 18px; isolation: isolate; font: 16px/1.3 s2, sans-serif; color: #b8b8b8; white-space: nowrap; transform: rotate(-.6deg); }
+.st-credits::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #161616; clip-path: var(--chip); }
+.st-credits b { font: 16px/1 s1, sans-serif; letter-spacing: .02em; color: #e6e6e6; margin-right: 8px; }
+.st-credits a { color: #e6e6e6; text-decoration: underline; text-underline-offset: 3px; }
+.st-credits a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ---- the paper panel: grey, a hair crooked, a lighter top edge, a torn right edge with binder holes ------------------ */
+.st-paper { position: relative; isolation: isolate; flex: 1; min-width: 0; display: grid; padding: calc(32px * var(--k)) 88px calc(32px * var(--k)) 48px; color: #151515;
+  font: 18px/1.3 s2, sans-serif; transform: rotate(-.3deg);
+  --row: calc(88px * var(--k)); --g: calc(var(--si-1) * var(--k)); --lbl: calc(32px * var(--k)); --txt: max(16px, calc(22px * var(--k))); --ctl: max(36px, calc(52px * var(--k))); }
+.st-paper::before { content: ""; position: absolute; inset: 0; z-index: -1; box-shadow: inset 0 7px 0 #bdbcb8;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='420' viewBox='0 0 300 420'%3E%3Cg transform='rotate(-8 150 210)'%3E%3Crect x='70' y='20' width='170' height='240' fill='%23b4b3af'/%3E%3Crect x='86' y='40' width='138' height='86' fill='%23aaa9a5'/%3E%3Cpath d='M98 112l26-36 22 26 16-14 28 24z' fill='%23a4a39f'/%3E%3Cg fill='%23a6a5a1'%3E%3Crect x='86' y='140' width='110' height='6'/%3E%3Crect x='86' y='154' width='84' height='6'/%3E%3Crect x='86' y='168' width='120' height='6'/%3E%3C/g%3E%3Cpath stroke='%2399989' d='M0 0'/%3E%3Cg stroke='%23a09f9b' stroke-width='3'%3E%3Cpath d='M92 196v44M98 196v44M106 196v44M110 196v44M118 196v44M126 196v44M130 196v44M138 196v44M146 196v44M150 196v44M158 196v44M166 196v44M170 196v44M178 196v44M186 196v44M194 196v44M198 196v44M206 196v44M214 196v44'/%3E%3C/g%3E%3C/g%3E%3Cg transform='rotate(5 200 300)'%3E%3Crect x='120' y='200' width='150' height='200' fill='%23b1b0ac'/%3E%3Cg fill='%23a7a6a2'%3E%3Crect x='136' y='222' width='96' height='5'/%3E%3Crect x='136' y='234' width='70' height='5'/%3E%3Crect x='136' y='246' width='104' height='5'/%3E%3Crect x='136' y='258' width='60' height='5'/%3E%3Crect x='136' y='282' width='110' height='5'/%3E%3Crect x='136' y='294' width='88' height='5'/%3E%3C/g%3E%3Cg stroke='%23a3a29e' stroke-width='2.5'%3E%3Cpath d='M140 330v40M146 330v40M153 330v40M157 330v40M164 330v40M171 330v40M175 330v40M182 330v40M189 330v40M193 330v40M200 330v40M207 330v40M211 330v40M218 330v40M225 330v40M229 330v40M236 330v40M243 330v40'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") right 30px top -36px / 300px no-repeat, var(--grain-d) 0 0 / 256px, var(--grain-l) 90px 30px / 256px, var(--mottle) 0 0 / 700px, #a9a8a4;
+  clip-path: polygon(0 .8%, 18% 0, 41% .6%, 66% 0, 88% .5%, 99.4% 0, 98.6% 6%, 99.6% 13%, 98.5% 21%, 99.7% 29%, 98.8% 37%, 99.5% 46%, 98.4% 54%, 99.7% 62%,
+    98.7% 71%, 99.4% 79%, 98.5% 87%, 99.6% 94%, 98.9% 100%, 74% 99.3%, 49% 100%, 22% 99.4%, 0 100%, .4% 62%, 0 30%); }
+.st-paper::after { content: ""; position: absolute; inset: 0; pointer-events: none;   /* two staples along the top edge */
+  background: url("../../../assets/staple-left.png") 10px 4px / 64px no-repeat, url("../../../assets/staple-right.png") right 70px top 2px / 64px no-repeat; }
+.st-holes { position: absolute; right: 34px; top: 7%; bottom: 7%; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.st-holes i { position: relative; width: 13px; height: 13px; border-radius: 50%; background: #141414; box-shadow: 0 0 0 2px #8e8d89; }
+.st-holes i::after { content: ""; position: absolute; left: 11px; top: 4px; width: 18px; height: 2px; background: #141414; transform: rotate(-12deg); transform-origin: left; }
+.st-pg { grid-area: 1 / 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: calc(var(--si-3) * var(--k)); opacity: 0; visibility: hidden;
+  transition: opacity 200ms var(--ease), visibility 0s 200ms; }
+/* only the shown page sizes the paper (fitBoard measures them all, so the row scale is the same everywhere) */
+.st-pg:not(.on) { max-height: 0; }
+.st-menu.st-measure .st-pg { max-height: none; }
+.st-pg.on { opacity: 1; visibility: visible; transition: opacity 200ms var(--ease) 60ms, visibility 0s; }
+.st-grp { display: flex; flex-direction: column; gap: var(--g); }
+.st-grp > * { margin: 0; }
+.st-grp > .si-reveal, .st-grp > .si-msg { margin-top: calc(-1 * var(--g)); }
+.st-paper .si-reveal > div::before, .st-paper .si-msg > span::before { height: var(--g); }
+.st-desc { display: flex; align-items: center; gap: 16px; min-height: 32px; font-size: var(--txt); color: #151515; }
+.st-desc b { font: var(--txt)/1 s1, sans-serif; letter-spacing: .02em; color: #111; }
+.st-paper .si-msg { color: #151515; font-size: var(--txt); }
+.st-link { color: #151515; text-decoration: underline; text-underline-offset: 3px; }
+.st-desc .st-link:focus-visible { outline: 2px solid #111; outline-offset: 3px; }
+.st-info { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: -10px; border-radius: 50%; color: #2a2a2a; transition: color 150ms var(--ease), background-color 150ms var(--ease), transform 120ms var(--ease); }
+@media (hover: hover) and (pointer: fine) { .st-info:hover { color: #000; background: rgba(0, 0, 0, .1); } }
+.st-info:active { transform: scale(.94); }
+.st-info:focus-visible { outline: 2px solid #111; outline-offset: 2px; }
+
+/* status on the paper, read by shape: a filled green dot = working, red = broken, a hollow ring = not set up yet */
+.st-stat { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.st-stat i { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 2px #3a3a3a; transition: background 250ms var(--ease), box-shadow 250ms var(--ease); }
+.st-stat[data-s="ok"] i { background: var(--regular); box-shadow: inset 0 0 0 2px #0e7d0e; }
+.st-stat[data-s="err"] i { background: #d92b3a; box-shadow: inset 0 0 0 2px #8f1520; }
+.st-stat[data-s="err"] { color: #8f1520; }
+.st-stat .st-ver { font: 16px ui-monospace, "Cascadia Mono", Consolas, monospace; color: #333; }
+
+/* ---- a setting: a dark slab with a faint lighter top line; its label left, its control right ----------------------- */
+.st-slab { position: relative; isolation: isolate; display: flex; align-items: center; gap: 16px; min-height: var(--row); padding: 6px 28px; color: #f4f4f4; }
+.st-slab::before { content: ""; position: absolute; inset: 0; z-index: -1; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .13); clip-path: var(--slab);
+  background: var(--grain-l) 0 0 / 256px, var(--grain-d) 60px 20px / 256px, linear-gradient(90deg, #2a2a2a, #333 55%, #444 92%, #3c3c3c), #2d2d2d; }
+.st-slab:nth-of-type(even)::before { transform: scaleX(-1); }
+.st-slab::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; clip-path: var(--slab); opacity: 0; transition: opacity 180ms var(--ease);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='7' viewBox='0 0 24 7'%3E%3Crect width='24' height='7' fill='%23111'/%3E%3Cpath fill='%23eaff3d' d='M-7 7L0 0h12L5 7zM17 7L24 0h12L29 7z'/%3E%3C/svg%3E") 0 100% / 24px 7px repeat-x; }
+.st-slab:nth-of-type(even)::after { transform: scaleX(-1); }
+.st-slab.busy::after { opacity: 1; animation: st-march 520ms linear infinite; }
+.st-slab:nth-of-type(even).busy::after { animation-direction: reverse; }
+@keyframes st-march { to { background-position-x: 24px; } }
+.st-sub { margin-left: 48px; }
+.st-lbl { flex: none; font: var(--lbl)/1.2 s1, sans-serif; letter-spacing: .02em; color: #fff; transition: color 160ms var(--ease); }
+.st-ctl { margin-left: auto; display: flex; align-items: center; gap: 16px; transition: opacity 160ms var(--ease); }
+.st-val { font: var(--txt)/1.3 s2, sans-serif; color: #d6d6d6; white-space: nowrap; }
+.st-why { display: none; flex: 1; text-align: center; font: var(--txt)/1.3 s2, sans-serif; color: #c4c4c4; }
+.st-slab.dis .st-lbl { color: #777; }
+.st-slab.dis .st-why:not(:empty) { display: block; }
+.st-slab.dis > .st-ctl { opacity: .35; pointer-events: none; user-select: none; }
+.st-slab.dis .st-seg button { cursor: default; }
+.st-slab.dis .st-seg button.on { background: var(--pat-dark) center / 260px, #1e1e1e; color: #ececec; }
+.st-slab :focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* fields on a slab: the sign-in field's underline, in light ink */
+.st-slab .si-in { color: #f4f4f4; border-bottom-color: rgba(255, 255, 255, .3); }
+.st-slab .si-in:focus { border-color: #fff; }
+.st-slab .si-in::placeholder { color: #8c8c8c; }
+.st-mono { font: 18px/1.35 ui-monospace, "Cascadia Mono", Consolas, monospace; }
+.st-slab .si-in.st-ip { width: 176px; flex: none; }
+.st-slab .si-in.st-port { width: 60px; flex: none; }
+.st-colon { color: #a8a8a8; margin: 0 -12px; }
+.st-path { font-size: 17px; color: #d6d6d6; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-slab .si-via { color: #bdbdbd; font-size: 16px; }
+.st-slab .si-strip { flex: 1; color: #d6d6d6; }
+.st-slab .si-chip { border-color: #d6d6d6; color: #f4f4f4; }
+.st-slab .si-mouse { color: #f4f4f4; }
+.st-file { display: inline-flex; align-items: center; gap: 8px; color: #d6d6d6; }
+
+/* ---- buttons: black torn stickers (the game's "Player Settings"); Reset everything is the red one ------------------ */
+.st-btn { position: relative; isolation: isolate; flex: none; display: inline-flex; align-items: center; gap: 8px; height: var(--ctl); padding: 0 22px;
+  color: #f4f4f4; font: var(--txt)/1 s2, sans-serif; white-space: nowrap; transform: rotate(-1deg); transition: transform 120ms var(--ease), opacity 150ms var(--ease), color 150ms var(--ease); }
+.st-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--grain-l) 0 0 / 256px, #0f0f0f; clip-path: var(--chip); transition: background-color 150ms var(--ease); }
+@media (hover: hover) and (pointer: fine) { .st-btn:hover:not(:disabled) { transform: rotate(-1deg) translateY(-2px); } }
+.st-btn:active:not(:disabled) { transform: rotate(-1deg) scale(.97); }
+.st-btn:disabled { opacity: .4; cursor: default; }
+.st-btn.go { color: #111; }
+.st-btn.go::before { background: var(--pat-lime) center / 260px, var(--lime); }
+.st-val.go { color: var(--lime); }
+.st-n { font: 15px/1 s1, sans-serif; letter-spacing: .04em; padding: 3px 7px 2px; border-radius: 999px; background: #f4f4f4; color: #111; }
+.st-foot { margin-top: auto; display: flex; justify-content: flex-end; }
+.st-danger { color: #ff6570; height: calc(var(--ctl) + 8px); padding: 0 28px; font-size: calc(var(--txt) + 1px); }
+.st-danger.arm { color: #fff; }
+.st-danger.arm::before { background: var(--grain-d) 0 0 / 256px, #d92b3a; }
+.st-danger:focus-visible { outline: 2px solid #111; outline-offset: 3px; }
+.st-quietbtn { font: var(--txt)/1.3 s2, sans-serif; color: #d6d6d6; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- few choices: separate dark chips, the chosen one lime ---------------------------------------------------------- */
+.st-seg { flex: none; display: flex; gap: 8px; }
+.st-seg button { min-width: 72px; height: var(--ctl); padding: 0 18px; border-radius: 8px; background: var(--pat-dark) center / 260px, #1e1e1e; box-shadow: inset 0 0 0 2px #0c0c0c; color: #ececec;
+  font: var(--txt)/1 s2, sans-serif; white-space: nowrap; transition: background-color 160ms var(--ease), color 160ms var(--ease); }
+@media (hover: hover) and (pointer: fine) { .st-seg button:not(.on):hover { background-color: #2a2a2a; background-blend-mode: lighten; } }
+.st-seg button.on { background: var(--pat-lime) center / 260px, var(--lime); color: #111; cursor: default; }
+
+/* ---- on / off: one pill in two halves; the lime half has a slanted edge and slides across ------------------------- */
+.st-oo { position: relative; flex: none; display: grid; grid-template-columns: 1fr 1fr; width: 232px; height: var(--ctl); border-radius: 999px; overflow: hidden;
+  background: var(--pat-dark) center / 260px, #1e1e1e; box-shadow: inset 0 0 0 3px #0c0c0c; font: var(--txt)/1 s1, sans-serif; letter-spacing: .02em; }
+.st-oo::before { content: ""; position: absolute; top: 3px; bottom: 3px; left: -16px; width: calc(50% + 32px); background: var(--pat-lime) center / 260px, var(--lime);
+  clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); transform: translateX(calc(100% - 32px)); transition: transform 240ms var(--ease); }
+.st-oo.on::before { transform: none; }
+.st-oo span { position: relative; display: grid; place-items: center; color: #e6e6e6; transition: color 200ms var(--ease); }
+.st-oo:not(.on) span:last-child, .st-oo.on span:first-child { color: #111; }
+
+/* ---- Zoom: the tick strip; numbers above, ticks lit lime up to the value, a caret under the chosen number --------- */
+.st-tick { flex: none; display: flex; gap: 3px; padding: 2px 0; border-radius: 4px; cursor: pointer; touch-action: none; user-select: none; }   /* display.ts: press and drag along it */
+.st-tick button { display: flex; flex-direction: column; align-items: center; gap: 14px; font: 17px/1 s1, sans-serif; color: #e6e6e6; }
+.st-tn { position: relative; transition: color 160ms var(--ease); }
+.st-tn::after { content: ""; position: absolute; left: 50%; bottom: -12px; margin-left: -5px; border: 5px solid transparent; border-top: 0; border-bottom: 6px solid var(--lime); opacity: 0; transition: opacity 160ms var(--ease); }
+.st-tick button.at .st-tn { color: var(--lime); }
+.st-tick button.at .st-tn::after { opacity: 1; }
+.st-tt { display: flex; gap: 3px; }
+.st-tt i { width: 10px; height: 15px; background: #0c0c0c; transition: background-color 160ms var(--ease); }
+.st-tt i.lit { background: var(--lime); }
+.st-tick:focus-visible { outline: 2px solid #fff; outline-offset: 6px; }
+
+/* the Motion choice "Reduced" (and the system setting) stops every transition here */
+html.st-still *, html.st-still *::before, html.st-still *::after { transition: none !important; animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .st-page *, .st-page *::before, .st-page *::after { transition: none !important; }
+  .st-slab.busy::after { animation: none; }
+}
+
+/* ---- in the app: the page zoom (fit to the window x the Display zoom), no companion, high contrast -------------------------- */
+.st-page { zoom: calc(var(--zpl, 1) * var(--stuz, 1)); }
+html #gear .gl, html #path .pl { zoom: calc(var(--zpl, 1) * var(--stuz, 1)); }
+.st-offline { position: absolute; left: 48px; bottom: 10px; margin: 0; font: var(--txt)/1.3 s2, sans-serif; color: #151515; }
+.st-offline > span::before { display: none; }
+.st-page.offline .st-offline { grid-template-rows: 1fr; opacity: 1; }
+.st-page.offline [data-api] { opacity: .45; transition: opacity 200ms var(--ease); }
+.st-page [data-api] { transition: opacity 200ms var(--ease); }
+.st-page .st-slab[data-api].dis .st-why:not(:empty) { display: block; }
+.st-slab .si-in.bad { border-bottom-color: #ff6570; }
+.st-paper .si-msg.err { color: #8f1520; }
+html.st-hc :focus-visible { outline: 3px solid #fff !important; outline-offset: 3px; }
+html.st-hc .st-slab::before { background: #000; box-shadow: inset 0 2px 0 #fff; }
+html.st-hc .st-paper::before { background: #d4d3cf; }
+html.st-hc .st-val, html.st-hc .st-path, html.st-hc .st-why { color: #fff; }

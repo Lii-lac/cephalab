@@ -1,0 +1,12 @@
+s3s/
+reference/
+.venv/
+state/
+__pycache__/
+cache/*
+/build/
+/dist/
+web/dist/
+web/dist-static/
+node_modules/
+tests/web/out/

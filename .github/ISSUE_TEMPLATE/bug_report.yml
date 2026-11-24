@@ -1,0 +1,51 @@
+name: Something broke
+description: Report a bug, crash, or something acting weird in Cephalab.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        No tech jargon needed! Just tell us what you were doing and what went wrong.
+
+  - type: dropdown
+    id: sync
+    attributes:
+      label: How do you connect your gear?
+      options:
+        - Nintendo account (no CFW)
+        - Modded Switch (CFW + sys-botbase)
+        - Imported an s3s file
+        - Haven't connected yet
+    validations:
+      required: true
+
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Where did it happen?
+      options:
+        - Opening Cephalab
+        - Signing in / connecting
+        - Weapons
+        - Gear / Build Editor
+        - Path
+        - Settings
+        - Somewhere else
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you click, and what went wrong? You can drag and drop screenshots right in here.
+      placeholder: Example: I signed in with Nintendo, clicked Path, and my hat didn't show up.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Splatoon 3 version (optional)
+      description: Skip this if you're not sure. Helpful if a new Splatoon update just dropped.
+      placeholder: e.g. 12.0.0

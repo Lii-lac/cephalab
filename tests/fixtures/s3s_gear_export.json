@@ -1,0 +1,78 @@
+{
+ "key": "uOCsr66pqKuqpaSnpqGgo6K9vL++uQ==",
+ "h": 305441741,
+ "gear": {
+  "data": {
+   "headGears": {
+    "nodes": [
+     {
+      "headGearId": "1002",
+      "primaryGearPower": {
+       "gearPowerId": 103
+      },
+      "additionalGearPowers": [
+       {
+        "gearPowerId": 4
+       },
+       {
+        "gearPowerId": 4
+       },
+       {
+        "gearPowerId": 0
+       }
+      ]
+     }
+    ]
+   },
+   "clothingGears": {
+    "nodes": [
+     {
+      "clothingGearId": "1001",
+      "primaryGearPower": {
+       "gearPowerId": 104
+      },
+      "additionalGearPowers": [
+       {
+        "gearPowerId": 4
+       },
+       {
+        "gearPowerId": 8
+       },
+       {
+        "gearPowerId": 0
+       }
+      ]
+     }
+    ]
+   },
+   "shoesGears": {
+    "nodes": [
+     {
+      "shoesGearId": "6003",
+      "primaryGearPower": {
+       "gearPowerId": 109
+      },
+      "additionalGearPowers": [
+       {
+        "gearPowerId": 4
+       },
+       {
+        "gearPowerId": 11
+       },
+       {
+        "gearPowerId": 12
+       }
+      ]
+     },
+     {
+      "shoesGearId": "999999",
+      "primaryGearPower": {
+       "gearPowerId": 0
+      },
+      "additionalGearPowers": []
+     }
+    ]
+   }
+  }
+ }
+}

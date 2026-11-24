@@ -1,0 +1,268 @@
+/* Live data (not in v52): the Switch tag's states, the builds' quiet note, a gear slot sendou left blank. */
+.switch[data-live] i { --dot: rgba(255,255,255,.35); background: var(--dot); box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--dot); transition: background 300ms var(--ease), box-shadow 300ms var(--ease); }
+.switch[data-live="ok"] i { --dot: var(--regular); }
+.switch[data-live="wait"] i { background: transparent; }
+.switch[data-live="error"] i { --dot: var(--red); }
+.switch[data-live="off"], .switch[data-live="offline"] { color: rgba(255,255,255,.6); }
+.switch { transition: color 300ms var(--ease); }
+.blabel .bnote { font: 16px s2; color: rgba(255,255,255,.6); }
+.blabel .bnote:empty { display: none; }
+.blob.empty::before { opacity: .45; }
+/* the Settings cog, last in the header's right group: 6px (the tabs' gap) after the Switch pill, so the group ends on the page's right edge; a red dot while SplatNet needs a sign-in */
+.cog { position: relative; flex: none; margin-left: -18px; width: 32px; height: 32px; padding: 0; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255,255,255,.18); color: #fff; transition: background 150ms var(--ease), transform 120ms var(--ease); }
+.cog.on { background: var(--blue); }
+@media (hover: hover) and (pointer: fine) { .cog:not(.on):hover { background: rgba(255,255,255,.28); } }
+.cog:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.cog-dot { position: absolute; top: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #000; opacity: 0; transition: opacity 250ms var(--ease); pointer-events: none; }
+.cog.needs .cog-dot { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .cog, .cog-dot { transition: none; } }
+/* Path: a lane the core is still looking for far ahead (path.ts progressive search): a thin bar that keeps growing, how far
+   it has looked, and a quiet line once it's clearly a long way off; a lane found that way shows its battles under the route */
+#path .lsearch { display: flex; flex-direction: column; gap: 12px; min-width: 0; max-width: 480px; padding: 0 18px; }
+#path .lsbar { height: 6px; border-radius: 999px; background: rgba(255,255,255,.14); overflow: hidden; }
+#path .lsbar i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--yellow); transition: width 600ms var(--ease), background 600ms var(--ease); }
+#path .lsearch.end .lsbar i { background: rgba(255,255,255,.35); }   /* the core can't look further: settled, full, grey */
+#path .lslab { font-size: 22px; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+#path .lnudge { font-size: 16px; color: rgba(255,255,255,.6); opacity: 0; transition: opacity 600ms var(--ease); }
+#path .lnudge.on { opacity: 1; }
+#path .lane > .lnote { min-width: 0; padding: 0 18px; font-size: 18px; color: rgba(255,255,255,.6); }   /* a lane with no route: where the route would start, quiet */
+#path .lfar { display: flex; flex-direction: column; gap: 4px; min-width: 0; }   /* 24: room for the burn group label hanging under the steps */
+#path .lfarnote { display: flex; flex-direction: row; align-items: baseline; flex-wrap: nowrap; gap: 14px; padding: 0 18px; white-space: nowrap; }
+#path .lfar.lfound, #path .unbattles .ufound { animation: lfound 600ms var(--ease) both; }
+@keyframes lfound { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #path .lsbar i, #path .lnudge { transition: none; } #path .lfar.lfound, #path .unbattles .ufound { animation: none; } }
+/* Path live loop (path-tick.ts): the step whose roll just happened inks over before the lane moves on */
+#path .track .step.inked .vis > * { opacity: 1; transition: opacity 300ms var(--ease), box-shadow 300ms var(--ease); }
+#path .track .step.inked .vis > .ab { box-shadow: 0 0 0 4px var(--yellow); }
+
+/* the Switch's chunk and ticket counts (path.ts stockOf) go into the plan, not onto the toggles; a quiet note while none are read */
+#path .tgwrap { margin-left: auto; position: relative; display: flex; }
+#path .tgwrap .toggles { margin-left: 0; }
+#path .stknote { position: absolute; right: 0; top: calc(100% + 6px); white-space: nowrap; font-size: 16px; color: rgba(255,255,255,.6); animation: stkin 600ms var(--ease) backwards; }
+@keyframes stkin { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #path .stknote { animation-duration: 1ms; } }
+/* typed counts (path-stock.ts): the toggle's picture is tappable while the Switch reports no stock (it tilts and lifts a
+   little on hover / while open); the popover is the weapons screen's dark tape */
+#path .tog .stktap { cursor: pointer; transition: translate 140ms var(--ease), rotate 140ms var(--ease); }
+@media (hover: hover) and (pointer: fine) { #path .tog .stktap:hover { translate: 0 -2px; rotate: -6deg; } }
+#path .tog .stktap[aria-expanded=true] { translate: 0 -2px; rotate: -6deg; }
+@media (prefers-reduced-motion: reduce) { #path .tog .stktap { transition: none; } }
+#path .stockpop { position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; zoom: calc(1 / var(--zpl, 1)); background: #111; padding: 12px 14px 14px; box-shadow: 3px 3px 0 #000; border-radius: 6px; rotate: -.6deg;
+  opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity 180ms var(--ease), transform 180ms var(--ease), visibility 0s linear 180ms; }
+#path .stockpop.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+#path .stockpop .sk-t { width: max-content; margin-bottom: 10px; color: #fff; pointer-events: none; }
+#path .stockpop .sk-g { display: grid; grid-template-columns: repeat(7, 64px); gap: 10px 8px; }
+#path .stockpop .sk-c { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#path .stockpop .sk-c img { width: 32px; height: 32px; object-fit: contain; }
+#path .stockpop input { width: 64px; height: 32px; box-sizing: border-box; border: 0; border-radius: 6px; background: #000; color: #fff; font: 17px/1 s2; text-align: center; -moz-appearance: textfield; }
+#path .stockpop input:focus-visible { outline: 2px solid var(--yellow); outline-offset: -2px; }
+#path .stockpop input::placeholder { color: rgba(255,255,255,.35); }
+@media (prefers-reduced-motion: reduce) { #path .stockpop { transform: none; } }
+html.st-still #path .stockpop { transform: none; }
+
+/* Up next's step after the ›: the lane's own cell (path.ts upCell), the ring centred in a lane-height box so a drink's
+   ticket sits on it where the lane puts it; the ticket pokes out right, so the cell keeps room for it */
+#path .next .ucell { position: relative; display: grid; place-items: center; height: 70px; min-width: 56px; }
+#path .next .ucell.udrink { margin-right: 22px; }
+#path .next .ucell .ticket.used { opacity: .4; filter: grayscale(1); }   /* the drink it needs is already active */
+/* Up next is a size up from the lanes under it: it overhangs them by 14px each side (its contents keep their distance
+   from its edges) and is a little taller to match (42/24 -> 45/27 padding, ~2% like the width) */
+#path .tag.next { margin-inline: -14px; padding-top: 45px; padding-bottom: 27px; }
+
+/* every column after the first has a › in every row, Murch work and placeholder dots too (v52.css .track.grid .step:not(.first)::before) */
+/* a roll that gets scrubbed later (burn): the cell is dimmed and its ring dashed; its label stays under it */
+#path .step.past .vis { opacity: .4; }
+#path .step.past .vis > .ab { opacity: 1; box-shadow: none; outline: 3px dashed #fff; outline-offset: 0; }
+
+/* Murch work (scrub, chunks) has columns of its own before its battle; chunks say what they cost (10 / 20 / 30 for the
+   1st / 2nd / 3rd copy of that ability on the piece), and the next step's chunk wears the yellow edge like the badges' ring */
+#path .track.grid .step .vis { position: relative; }
+#path .step .cnum { position: absolute; right: -8px; top: -2px; z-index: 2; font: 19px/1 s2; color: #fff; transform: rotate(var(--ct, 0deg)); text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; pointer-events: auto; }
+#path .step.here .chunkonly .edge { background: var(--yellow); }
+#path .step .cnum.lack { color: var(--red); }   /* a main swap's 45 chunks you don't have (the cap's 30+ red) */
+#path .chunktrio { position: relative; display: block; width: 70px; height: 70px; }   /* a main-only main's three recipe chunks */
+#path .ucell .chunktrio { zoom: .8; }
+#path .goal .ab.main { margin-right: 4px; }
+#path .goal .wrong { opacity: .3; }   /* a main-only goal the piece lacks: the head's wrong look */
+
+/* the Path scrolls under the header with a gap and a short fade at its top edge, as the Weapons screen does */
+#path.screen.on { margin-top: 14px; padding-top: 22px; -webkit-mask: linear-gradient(transparent 0, #000 22px); mask: linear-gradient(transparent 0, #000 22px); }
+/* the lanes pan sideways together (path-pan.ts): each track is clipped left and right only (tickets and ×N may still poke
+   above), past where its cells have faded out, the lane's end column has one width in every lane so the clipped edges line up */
+#path :is(.lane, .pclane) { grid-template-columns: 150px minmax(0, 1fr) 270px !important; }
+#path .lend { width: 270px; position: relative; }
+/* the cap (42px: three pips) has its own strip at the lend's left and the pill centres in what is left, 8px clear of it; the cost row
+   centres under the whole lend on one line: path.ts fitCosts steps it down (.tight) and then moves the least important chips into
+   the rolls chip's tooltip when all of rolls, tickets, chunks and snails would not fit (a second line went under the lane) */
+#path .lend .goal { margin-left: 50px; }   /* in every lane, so a lane without a cap keeps its pill in line */
+#path .lend .lcost { flex-wrap: nowrap; justify-content: center; max-width: 100%; }
+#path .lend .lcost > [hidden] { display: none; }
+#path .lend .lcost.tight { gap: 3px; }
+#path .lend .lcost.tight .lc { gap: 4px; padding: 2px 7px 2px 4px; font-size: 13px; }
+#path .lend .lcost.tight .lc b { font-size: 15px; }
+#path .lend .lcost.tight .lc .tkt { width: 32px !important; }
+#path .lend .lcost.tight .lc img.chunkbare { width: 18px !important; height: 18px !important; }
+#path .lend .lcost.tight .lc img.snail { width: 22px; height: 22px; }
+/* a lane's one grid row is the lane's content height: a tall item overflows itself instead of growing the row, which would push
+   the others down (the have row under the gear went under the lane's bottom edge when the cost row wrapped) */
+#path :is(.lane, .pclane) { grid-template-rows: minmax(0, 1fr); }
+/* a lane's chunk cap (path.ts capBox), left of its goal pill and level with it: the chunk sticker over three pips, lit = at
+   most 10 / 20 / 30+ chunks on this piece. data-v 0: no chunks, the sticker greyed, dim and small; 1-2: white sticker,
+   yellow pips; 3 (no cap): the sticker and all three pips red (a flat red laid over the sticker's shape). The sticker is
+   scaled by level (.75 / .9 / 1 / 1.15) about its centre inside a fixed 24px box, so nothing around it moves. With Chunks
+   off it fades out (the pill's redraw replays the fade). The press-and-drag strip's options (.ccpick .cco) look the same */
+#path .ccap, .ccpick .cco { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 5px; border-radius: 8px; }
+#path .ccap { position: absolute; left: 0; top: 2px; border: 0; background: none; cursor: pointer; touch-action: none; user-select: none; -webkit-user-drag: none;
+  transition: opacity 220ms var(--ease); }
+#path .ccap img, .ccpick img { -webkit-user-drag: none; }
+#path .ccap.off { opacity: 0; visibility: hidden; }
+:is(#path .ccap, .ccpick .cco) .cic { position: relative; width: 24px; height: 24px; transform: scale(1); transition: opacity 180ms var(--ease), transform 160ms var(--ease); }
+:is(#path .ccap, .ccpick .cco) .cic img { display: block; width: 24px; height: 24px; filter: drop-shadow(1px 1px 0 rgba(0,0,0,.5)); transition: filter 180ms var(--ease); }
+:is(#path .ccap, .ccpick .cco) .ctint { position: absolute; inset: 0; background: var(--red); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center; mix-blend-mode: multiply; opacity: 0; transition: opacity 180ms var(--ease); }
+:is(#path .ccap, .ccpick .cco) .pips { display: flex; gap: 4px; }
+:is(#path .ccap, .ccpick .cco) .pips i { width: 8px; height: 8px; border-radius: 50%; background: #4c4c52; transition: background-color 160ms var(--ease); }
+:is(#path .ccap, .ccpick .cco) .pips i.lit { background: var(--yellow); }
+#path .ccap:hover .pips i:not(.lit) { background: #6a6a70; }
+:is(#path .ccap, .ccpick .cco)[data-v="0"] .cic { opacity: .5; transform: scale(.75); }
+:is(#path .ccap, .ccpick .cco)[data-v="0"] .cic img { filter: grayscale(1) brightness(.75); }
+:is(#path .ccap, .ccpick .cco)[data-v="1"] .cic { transform: scale(.9); }
+:is(#path .ccap, .ccpick .cco)[data-v="3"] .cic { transform: scale(1.15); }
+:is(#path .ccap, .ccpick .cco)[data-v="3"] .ctint { opacity: 1; }
+:is(#path .ccap, .ccpick .cco)[data-v="3"] .pips i.lit { background: var(--red); }
+#path .ccap:focus-visible { outline: 2px solid var(--yellow); outline-offset: 0; }
+/* the strip a held cap pops (path.ts capDown): on <body>, fixed above the widget, zoomed like the lanes; a dark board with
+   a hard black offset shadow and a slight tilt, scaled and faded in from the widget's side in 120 ms and out the same way.
+   The option under the pointer lifts onto black; the current level has a white bar under it */
+.ccpick { position: fixed; z-index: 1000; left: 0; top: 0; pointer-events: none; }
+.ccpick .ccin { display: flex; gap: 4px; padding: 5px; border-radius: 12px; background: #2e2e33; box-shadow: 0 0 0 2px #000, 4px 4px 0 2px #000;
+  transform-origin: 50% 100%; transform: rotate(-1.5deg) scale(.6); opacity: 0; transition: transform 120ms var(--ease), opacity 120ms var(--ease); }
+.ccpick.below .ccin { transform-origin: 50% 0; }
+.ccpick.on .ccin { transform: rotate(-1.5deg); opacity: 1; }
+.ccpick .cco { position: relative; transition: background-color 100ms var(--ease), transform 100ms var(--ease); }
+.ccpick .cco.cur::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 16px; height: 3px; margin-left: -8px; border-radius: 2px; background: #fff; }
+.ccpick .cco.hot { background: #000; transform: scale(1.12); }
+@media (prefers-reduced-motion: reduce) { #path .ccap, :is(#path .ccap, .ccpick .cco) :is(.cic, .cic img, .ctint, .pips i), .ccpick .ccin, .ccpick .cco { transition: none; } }
+#path .tview { min-width: 0; clip-path: inset(-80px 0 -80px -12px); cursor: grab; touch-action: pan-y; user-select: none; }
+#path.panning .tview, #path .panning .tview { cursor: grabbing; }
+#path .tview > .track { will-change: transform; }   /* path-pan.ts fades each cell by how far it is past an edge (inline opacity) */
+/* how far along the lanes you are (path-pan.ts): a slim track under the last lane, under its cells, with a thumb as wide as the
+   columns in view; it fades out while every column fits. Same grid as a lane, so it lines up with the tracks' column */
+#path .pscroll { display: grid; grid-template-columns: 150px minmax(0, 1fr) 270px; gap: 22px; padding: 0 26px 0 18px; margin: -8px 0 16px;
+  opacity: 0; visibility: hidden; transition: opacity 250ms var(--ease), visibility 0s linear 250ms; }
+#path .pscroll.on { opacity: 1; visibility: visible; transition-delay: 0s; }
+#path .pscroll .psk { grid-column: 2; position: relative; box-sizing: content-box; height: 6px; padding: 7px 0; background: #46464a content-box; border-radius: 999px; cursor: pointer; touch-action: none; user-select: none; }
+#path .pscroll .psk > i { position: absolute; left: 0; top: 7px; height: 6px; width: 0; border-radius: 999px; background: var(--yellow); will-change: transform; cursor: grab; }
+#path .pscroll .psk.held > i { cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) { #path .pscroll { transition: none; } }
+/* a lane head's slots (path.ts haveSlot): "?" while open and not rolled yet; a slot the piece's stars don't open is a grey no-entry sign */
+#path .have .ab.lock { background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 2px #707074; }
+#path .have .ab.lock svg { width: 100%; height: 100%; fill: none; stroke: #707074; stroke-width: 2; stroke-linecap: round; }
+/* an unlock step (path.ts SNAIL): a Super Sea Snail in a black hexagon (white edge, yellow when it's the step now); the same snail on the lane cost and the Up next badge */
+#path .ab.snl { position: relative; overflow: visible; background: none; border-radius: 0; box-shadow: none !important; --hx: #fff; --hw: 3px; }
+/* a flat-top hexagon with rounded corners (path.ts HEX), as tall as a ring and 1.155x as wide so it reads the same size; its
+   edge is the outer half of a doubled stroke painted under the black fill */
+#path .ab.snl svg.hex { position: absolute; top: 0; left: -7.7%; width: 115.4%; height: 100%; overflow: visible; }
+#path .ab.snl svg.hex path { fill: #000; stroke: var(--hx); stroke-width: calc(var(--hw) * 2); stroke-linejoin: round; paint-order: stroke; vector-effect: non-scaling-stroke; transition: stroke 300ms var(--ease), stroke-width 300ms var(--ease); }
+#path .step.here .vis > .ab.snl, #path .track .step.inked .vis > .ab.snl { --hx: var(--yellow); --hw: 4px; }
+#path .ab.snl img.snail { position: relative; z-index: 1; width: 72%; height: 72%; object-fit: contain; filter: drop-shadow(0 0 1.5px rgba(255,255,255,.6)); }   /* the painted snail is dark: a faint light rim keeps it off the black */
+img.snail { flex: none; object-fit: contain; }
+#path .lc img.snail { width: 26px; height: 26px; }
+#path .badge img.snail { width: 30px; height: 30px; margin: -5px 0; transform: rotate(-6deg); }
+/* the first plan of a build being worked out (path.ts calcBox): the three lanes as they'll stand, a row of "?" rings in
+   each that a yellow ring sweeps along, each ring it passes flicking through abilities (.f) and landing on one (.l), then
+   back to "?" (.q). One 3.2 s cycle (PCP) for every ring, placed by its delay; 70 ms a flick, the landed one held ~1.6 s.
+   Its cells are real lane steps (.step.pcs: keep / past / tool / ph / here, labels dimmed), so they sit where the lane's cells
+   will; the Main cell's chunks flick the same way and land on the goal. When the plan lands, path.ts calcLand moves the
+   cells onto the real lanes' cells (same grid cell) and lands them left to right */
+#path .lanes { position: relative; }
+#path .pcalc { display: flex; flex-direction: column; gap: 22px; }
+#path .lane .track.grid { grid-auto-columns: var(--col); }   /* a calculating cell past the plan's end keeps its column while it lands */
+#path .pcghost { visibility: hidden; }   /* a lane cost's room, so a calculating lane is as tall as the lane it turns into */
+#path .pctview { min-width: 0; clip-path: inset(-80px 0 -80px -12px); }   /* the real .tview's clip before path-pan fits it */
+#path .pcs .n { opacity: .5; }
+#path .pcc { position: relative; flex: none; width: var(--col); height: 70px; display: grid; place-items: center; }
+#path .pcc:not(.first)::before { content: "›"; position: absolute; left: -7px; top: 22px; font: 24px/1 s1; color: #5a5a5a; }
+#path .pcc .ab { box-shadow: 0 0 0 3px rgba(255,255,255,.3); }
+#path :is(.pcc, .pcs:not(.tool)) .ab { position: relative; display: grid; animation: pcpop 3.2s infinite; animation-delay: calc(var(--t) + .28s); }
+#path :is(.pcc, .pcs:not(.tool)) .ab::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 4px var(--yellow); opacity: 0; animation: pchere 3.2s linear infinite; animation-delay: var(--t); }
+#path :is(.pcc, .pcs) .ab img { grid-area: 1 / 1; }
+#path :is(.pcc, .pcs) img:is(.f, .l) { opacity: 0; }
+#path :is(.pcc, .pcs) img.q { animation: pcq 3.2s step-end infinite; }
+#path :is(.pcc, .pcs) img.f { animation: pcf 3.2s step-end infinite; }
+#path :is(.pcc, .pcs) img.l { animation: pcl 3.2s step-end infinite; }
+@keyframes pcq { 0% { opacity: 0; } 60% { opacity: 1; } 100% { opacity: 1; } }                  /* hidden while it rolls and holds */
+@keyframes pcf { 0% { opacity: 1; } 2.1875% { opacity: 0; } 100% { opacity: 0; } }             /* one 70 ms flick */
+@keyframes pcl { 0% { opacity: 1; } 51.25% { opacity: 0; } 100% { opacity: 0; } }              /* landed, until "?" comes back */
+@keyframes pchere { 0% { opacity: 0; } 3% { opacity: 1; } 11% { opacity: 1; } 18% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes pcpop { 0% { transform: scale(1.14); animation-timing-function: cubic-bezier(.2,.8,.2,1); } 9% { transform: scale(1); } 100% { transform: scale(1); } }
+#path .pcnext .pcc { width: auto; min-width: 56px; }
+#path .pcnext .pcc .ab { box-shadow: 0 0 0 3px #fff; }
+#path .pcnext .ubar i { width: 0; }
+@media (prefers-reduced-motion: reduce) { #path :is(.pcalc, .pcnext) *, #path :is(.pcalc, .pcnext) *::after { animation: none !important; } }
+html.st-still #path :is(.pcalc, .pcnext) *, html.st-still #path :is(.pcalc, .pcnext) *::after { animation: none !important; }
+/* a replan you asked for (path.ts busyOn): the lanes' tracks and costs dim, the cap you touched ripples its pips */
+#path .lanes > .lane :is(.tview, .lsearch, .lfarnote, .lcost) { transition: opacity 240ms var(--ease); }   /* dimming; the way back is busyFade (it survives a redraw) */
+#path.recalc .lanes > .lane :is(.tview, .lsearch, .lfarnote, .lcost) { opacity: .35; }
+:is(#path.recalc[data-rc="0"] .ccap[data-cap="0"], #path.recalc[data-rc="1"] .ccap[data-cap="1"], #path.recalc[data-rc="2"] .ccap[data-cap="2"]) .pips i { animation: rcpip 840ms ease-in-out infinite; }
+:is(#path.recalc .ccap) .pips i:nth-child(2) { animation-delay: 140ms; }
+:is(#path.recalc .ccap) .pips i:nth-child(3) { animation-delay: 280ms; }
+@keyframes rcpip { 0%, 50%, 100% { transform: translateY(0); } 25% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { #path.recalc .ccap .pips i { animation: none !important; } }
+
+/* Up next fills its banner (Alex 2026-11-21): the step drawn 1.45x, the title and the bar grown out to the badges; the
+   badge column always has room for four (Step, tickets, chunks, snails), so every banner, the calculating one included,
+   is the same height and the lanes under it never move */
+#path .tag.next { gap: 40px; }
+#path .next .flow { zoom: 1.45; }
+#path .next h2 { font-size: 48px; line-height: 1.04; margin: 0 0 12px; }
+#path .next .unbattles { font-size: 24px; gap: 18px; margin-top: 6px; }
+#path .next .unbattles b { font-size: 30px; }
+#path .next .utitle > .upg { align-self: center; }
+#path .next .utitle h2 { margin-bottom: 0; }
+#path .next .utitle .unbattles { margin-top: 18px; }   /* title + bar of a page sit centred in the banner, one line or two */
+#path .next .ubar { flex: 1 1 auto; width: auto; min-width: 200px; max-width: 560px; height: 16px; border-radius: 8px; }
+#path .next .ubar i { border-radius: 8px; }
+#path .next .badges { min-height: calc(4 * 52px + 3 * 8px); justify-content: center; }
+/* nothing on the Path moves when a step completes (Alex 2026-11-21): the title is a box of two lines whatever it says (a title
+   of three steps its font size down in path.ts fitTitles; none is clipped), and every lane row has one height, the tallest
+   it ever takes (a found far lane: its route, its battles, the nudge), whether it shows a track, the search box, a note or the calculating strips */
+#path .next .utitle h2 { height: 100px; display: flex; align-items: center; }
+#path .next .utitle h2 > span { display: block; min-width: 0; }
+#path :is(.lanes > .lane, .lanes > .pcalc > .pclane) { box-sizing: border-box; height: 180px; }
+/* the calculating banner's gear: the build's pieces in turn, 0.4 s each (path.ts calcNext) */
+#path .pcgears { display: grid; }
+#path .pcg { grid-area: 1 / 1; opacity: 0; animation: pcgear 1.2s step-end infinite; }
+#path .pcg:first-child, #path .pcgears.one .pcg { opacity: 1; }
+#path .pcgears.one .pcg { animation: none; }
+@keyframes pcgear { 0% { opacity: 1; } 33.333% { opacity: 0; } 100% { opacity: 0; } }
+/* Path: "more chunks would save rolls" (path-tip.ts): a small card centred on the 28px gap between the Up next banner and the
+   lanes, right-aligned (over the banner's paint and the lane's top padding, nothing to press); absolute in .lanes, out of the
+   flow: nothing moves when it comes or goes. It fades in and out. */
+#path .lanes > .psug { position: absolute; right: 0; top: -14px; transform: translateY(-50%); z-index: 5; display: flex; align-items: center; gap: 10px;
+  max-width: 100%; white-space: nowrap; padding: 4px 4px 4px 8px; border-radius: 12px;
+  background: #2a2a2d; box-shadow: 0 0 0 2px rgba(255,255,255,.14); color: rgba(255,255,255,.7); font-size: 16px; line-height: 1.25;
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 240ms var(--ease), visibility 0s linear 240ms; }
+#path .lanes > .psug.show { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 240ms var(--ease), visibility 0s; }
+.psug .psart { flex: none; width: 30px; height: 30px; }
+.psug .psart > span { display: block; width: 70px; height: 70px; transform: scale(.4286); transform-origin: 0 0; }   /* the chunk sticker is 70px (v52.css, !important): scaled as a whole */
+.psug .psart .chunkonly { display: block; }   /* a span: in the lanes a grid blockifies it */
+.psug .pstx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.psug .pstx b { color: #fff; font-weight: normal; }
+.psug .psx { flex: none; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: grid; place-items: center; background: transparent; color: rgba(255,255,255,.6); transition: background 150ms var(--ease), color 150ms var(--ease); }
+.psug .psx svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+@media (hover: hover) and (pointer: fine) { .psug .psx:hover { background: rgba(255,255,255,.12); color: #fff; } }
+.psug .psx:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { #path .lanes > .psug, #path .lanes > .psug.show { transition-duration: 1ms; } }
+.switch span { display: block; max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* shared themed tooltip (tip.ts): black pill, Splatoon body font, fixed, pointer-events none */
+.tip { position: fixed; left: 0; top: 0; z-index: 1100; pointer-events: none; width: max-content; max-width: min(340px, calc(100vw - 16px));
+  padding: 5px 11px; border-radius: 14px; background: #111; color: #fff; border: 2px solid #000; box-shadow: 2px 2px 0 #000;
+  font: 14px/1.25 s2, sans-serif; letter-spacing: .01em; white-space: pre-line;
+  opacity: 0; visibility: hidden; transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0) translateY(4px);
+  transition: opacity 120ms var(--ease), transform 120ms var(--ease), visibility 0s linear 120ms; }
+.tip.on { opacity: 1; visibility: visible; transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0);
+  transition: opacity 120ms var(--ease), transform 120ms var(--ease), visibility 0s; }
+@media (prefers-reduced-motion: reduce) { .tip { transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0); } }
+html.st-still .tip { transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0); }

@@ -1,0 +1,36 @@
+/* Settings screen basics (the board itself is settings.css): the screen's box, the sign-in strip and the fields, quiet lines and
+   reveals the board's rows are built from. One spacing scale (8 / 16 / 24). */
+#settings.screen.on { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4a4a4e transparent; padding-left: var(--side, 48px); padding-right: var(--side, 48px); }
+.st-page { zoom: var(--zpl, 1); }   /* the page scale; settings.css multiplies it by the Display zoom in the app */
+.si-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
+.si-via { flex: none; white-space: nowrap; font-size: 14px; color: #6b625a; cursor: default; }
+
+/* the strip, one row: red "Select this person", right-click, Copy link, then the paste field filling what is left */
+.si-reveal { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 200ms var(--ease), opacity 160ms var(--ease); }
+.si-reveal.open { grid-template-rows: 1fr; opacity: 1; }
+.si-reveal > div { min-height: 0; overflow: hidden; }
+.si-reveal > div::before { content: ""; display: block; height: var(--si-2); }
+.si-strip { display: flex; align-items: center; gap: var(--si-1); color: #4a433d; }
+.si-strip > * { flex: none; }
+.si-strip > .si-in { flex: 1 1 0; min-width: 0; width: auto; }
+.si-pill { padding: 3px 10px; border-radius: 999px; background: #d92b3a; color: #fff; font: 15px/1.2 s2, sans-serif; white-space: nowrap; }
+.si-chip { padding: 1px 7px; border: 1.5px solid #111; border-radius: 6px; color: #111; font: 15px/1.2 s2, sans-serif; white-space: nowrap; }
+.si-mouse { color: #111; width: 14px; height: 18px; }
+.si-strip .si-arrow { width: 14px; height: 14px; }
+
+.si-in { width: 100%; font: 17px/1.35 s2, sans-serif; color: #111; background: none; border: 0; outline: none; padding: 0 0 3px;
+  border-bottom: 2px solid rgba(0, 0, 0, .15); border-radius: 0; transition: border-color 150ms var(--ease), opacity 150ms var(--ease); }
+.si-in:focus { border-color: #111; }
+.si-in::placeholder { color: #6b625a; }
+.si-in:disabled { opacity: .5; cursor: default; }
+
+/* a one-line message: no space while empty; its height eases open with the fade when text arrives and shut when it goes */
+.si-msg { display: grid; grid-template-rows: 0fr; color: #4a433d; opacity: 0; transition: grid-template-rows 200ms var(--ease), opacity 160ms var(--ease); }
+.si-msg > span { display: block; min-height: 0; overflow: hidden; }
+.si-msg > span::before { content: ""; display: block; height: var(--si-1); }   /* the 8px under the control above lives inside the line, so an empty one takes none */
+.si-msg.on { grid-template-rows: 1fr; opacity: 1; }
+.si-msg.err { color: #b3202e; }
+
+@media (prefers-reduced-motion: reduce) {
+  .si-reveal, .si-msg, .si-in { transition: none; }
+}

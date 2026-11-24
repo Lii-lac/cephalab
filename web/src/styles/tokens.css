@@ -1,0 +1,8 @@
+/* v52 :root custom properties (mirrored in assets/tokens.json) */
+:root {
+  --yellow: #eaff3d; --blue: #603bff; --purple: #af50ff; --mint: #6af7ce; --orange: #ff9750; --red: #ff505e;
+  --regular: #19d719; --anarchy: #f54910; --x: #0fdb9b; --league: #f02d7d; --salmon: #ff5600;
+  --ink: #111; --paper-ink: #2a2522;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --tag-mask: url("../../../assets/tag-card-header.svg");
+}

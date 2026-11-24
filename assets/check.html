@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>assets check</title>
+<!-- Serve this folder over http (fonts and fetch don't load from file://), e.g.
+     cd assets && ..\.venv\Scripts\python.exe -m http.server 8000   then open http://localhost:8000/check.html -->
+<style>
+@font-face { font-family: s1; src: url("Splatoon1-common.woff2") format("woff2"); }
+@font-face { font-family: s2; src: url("Splatoon2-common.woff2") format("woff2"); }
+body { margin: 24px; background: #111; color: #eee; font: 15px/1.4 system-ui, sans-serif; }
+h1 { font: 40px/1 s1, monospace; margin: 0 0 6px; } h2 { font: 22px/1.2 s2, monospace; margin: 20px 0 8px; }
+.r { margin: 2px 0; } .ok { color: #6af7ce; } .bad { color: #ff505e; }
+.sw { display: inline-flex; flex-direction: column; align-items: center; width: 92px; margin: 0 6px 8px 0; font-size: 12px; }
+.sw i { width: 56px; height: 36px; border-radius: 8px; border: 1px solid #0006; margin-bottom: 3px; }
+.imgs img { height: 64px; margin: 0 8px 8px 0; background: #333; }
+#result { font: 20px s2, monospace; padding: 8px 12px; display: inline-block; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>Cephalab</h1>
+<div id="result">checking...</div>
+<h2>Fonts</h2><div id="fonts"></div>
+<h2>Tokens</h2><div id="tokens"></div><div id="swatches"></div>
+<h2>Images</h2><div id="imgs" class="imgs"></div>
+<script>
+const out = (id, ok, text) => { const d = document.createElement("div"); d.className = "r " + (ok ? "ok" : "bad"); d.textContent = (ok ? "OK   " : "FAIL ") + text; document.getElementById(id).append(d); return ok; };
+const IMGS = ["splat_00.png", "splash_00.png", "splash_15.png", "paper-tear-band.svg", "ticket.png", "chunk.png", "staple-left.png", "tag-card-header.svg", "paper-tear-mask.svg", "information-bg.jpg"];
+(async () => {
+  const checks = [];
+  for (const [fam, file] of [["s1", "Splatoon1-common.woff2"], ["s2", "Splatoon2-common.woff2"]]) {
+    const faces = await document.fonts.load(`20px ${fam}`, "Cephalab").catch(() => []);
+    checks.push(out("fonts", faces.length > 0 && document.fonts.check(`20px ${fam}`, "Cephalab"), `${fam} (${file})`));
+  }
+  try {
+    const t = await (await fetch("tokens.json")).json();
+    const colors = Object.entries(t.colors.root);
+    checks.push(out("tokens", colors.length > 10, `tokens.json: ${colors.length} colours, ${t.cardInkBands.length} card ink bands, ${Object.keys(t.motion.easings).length} easings, ${t.motion.uses.length} timed motions`));
+    for (const [k, v] of colors) document.getElementById("swatches").insertAdjacentHTML("beforeend", `<span class="sw"><i style="background:${v}"></i>--${k}<br>${v}</span>`);
+    for (const b of t.cardInkBands) document.getElementById("swatches").insertAdjacentHTML("beforeend", `<span class="sw"><i style="background:oklch(${(b.lightness[0] + b.lightness[1]) / 2} ${(b.chroma[0] + b.chroma[1]) / 2} ${(b.hue[0] + b.hue[1]) / 2 % 360})"></i>${b.name}</span>`);
+    const css = getComputedStyle(document.documentElement);
+    document.documentElement.style.setProperty("--yellow", t.colors.root.yellow);
+    checks.push(out("tokens", css.getPropertyValue("--yellow").trim() === t.colors.root.yellow, `--yellow applies as a custom property (${t.colors.root.yellow})`));
+  } catch (e) { checks.push(out("tokens", false, "tokens.json: " + e.message)); }
+  await Promise.all(IMGS.map(f => new Promise(ok => {
+    const im = new Image(); im.src = f; im.title = f; document.getElementById("imgs").append(im);
+    im.onload = () => ok(checks.push(true)); im.onerror = () => ok(checks.push(out("imgs", false, f)));
+  })));
+  const all = checks.every(Boolean), r = document.getElementById("result");
+  r.textContent = all ? `ALL LOADED (${checks.length} checks)` : "SOMETHING FAILED"; r.style.background = all ? "#19d719" : "#ff505e"; r.style.color = "#000";
+  document.body.dataset.result = all ? "pass" : "fail";
+})();
+</script>
+</body>
+</html>
