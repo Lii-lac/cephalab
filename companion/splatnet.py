@@ -43,7 +43,7 @@ NXAPI_AUTH_URL = "https://nxapi-auth.fancy.org.uk/api/oauth/token"
 NXAPI_BASE_URL = "https://nxapi-znca-api.fancy.org.uk/api/znca"
 NXAPI_CLIENT_ID = "bwO4_0fBZhJEGg5C41D0Gw"
 NXAPI_CLIENT_VERSION = "d8fAZDPzwimzQ7c6"
-CLIENT_VERSION = "0.1.0 (Cephalab)"      # sent in User-Agent to nxapi / s3s
+CLIENT_VERSION = "0.1.1 (Cephalab)"      # sent in User-Agent to nxapi / s3s
 if iksm is not None:                                # get_session_token() calls get_nsoapp_version() before log_in/get_gtoken sets these
     iksm.S3S_VERSION = CLIENT_VERSION
     iksm.F_GEN_URL = F_GEN_URL
