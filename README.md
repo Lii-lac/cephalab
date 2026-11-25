@@ -101,7 +101,7 @@ Pick a popular build under **Weapons** or build your own in the editor, then ope
 | [sendou.ink](https://sendou.ink/) | Popular community builds and idea |
 | [s3s](https://github.com/frozenpandaman/s3s) | SplatNet 3 integration |
 | [nxapi](https://github.com/samuelthomas2774/nxapi-znca-api) | Nintendo Switch Online sign-in |
-| LegoFigure11 / Splat3GearView | Switch memory offsets |
+| [LegoFigure11 / Splat3GearView](https://github.com/LegoFigure11/Splat3GearView) | Switch memory offsets |
 
 ### License
 
