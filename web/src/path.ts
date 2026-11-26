@@ -131,13 +131,28 @@ function laneSteps(steps, cols) {
   for (let c = 1; c <= cols.length; c++) if (!taken.has(c)) html += `<div class="step ph${c === 1 ? " first" : ""}" style="grid-column:${c}"><div class="vis"><span class="phdot"></span></div></div>`;
   return html;
 }
-export function laneCost(steps) {
+// a finished lane (its piece has the goal: no rolls left) shows a lime "done" tape where its track would be, one of these
+// words, picked by a hash of the gear and the build's contents so the same finished piece always says the same thing
+export const DONE_WORDS = ["Stay Fresh!", "Booyah!", "So Fresh!", "Woomy!", "Veemo!", "Ink-credible!", "Splat-tastic!", "Fresh Fit!", "Ready to Splat!", "Fully Inked!", "Off the Hook!"];
+const laneDone = l => !l.note && !l.searching && !l.far && !l.steps.some(isRollAct);
+const doneKey = (b, l, li) => `${l.row}|${buildKey(b)}|${li}`;
+const doneTape = (b, l, li) => { const k = doneKey(b, l, li); return `<div class="ldone"><span class="dtape s1" data-dk="${esc(k)}">${esc(DONE_WORDS[hash32(k) % DONE_WORDS.length])}</span></div>`; };
+// the tape pops in (scale + fade, 180 ms) the first time this page shows it, not on every redraw (a redraw re-inserts it)
+const donePopped = new Set<string>();
+function donePop(host) {
+  const rm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (const t of host.querySelectorAll<HTMLElement>(".lanes > .lane .dtape")) {
+    const k = t.dataset.dk; if (donePopped.has(k)) continue; donePopped.add(k);
+    t.animate(rm ? { opacity: [0, 1] } : { opacity: [0, 1], scale: [".9", "1"] }, { duration: 180, easing: "cubic-bezier(.2,.9,.3,1.2)" });
+  }
+}
+export function laneCost(steps, done = false) {
   const rolls = steps.filter(isRollAct).reduce((t, s) => t + (s.times || 1), 0);
   // a drink burn group of N rolls is at least ceil(N / 8) tickets (DRINK_COLUMNS, core/API.md)
   const tickets = steps.filter(s => s.k === "drink").reduce((t, s) => t + (s.times ? Math.ceil(s.times / 8) : 1), 0), chunks = steps.reduce((t, s) => t + (s.cost || 0), 0);
   const snails = steps.filter(s => s.k === "unlock").length;
-  return `<div class="lcost">
-    <span class="lc" data-tip="Rolls left"><b>${fmt(rolls)}</b> ${rolls === 1 ? "roll" : "rolls"}</span>
+  return `<div class="lcost${done ? " nr" : ""}">
+    ${done ? "" : `<span class="lc" data-tip="Rolls left"><b>${fmt(rolls)}</b> ${rolls === 1 ? "roll" : "rolls"}</span>`}
     ${tickets ? `<span class="lc" data-tip="Drink tickets"><span class="tkt" style="width:40px"><img class="base" src="${T}" alt=""><img class="tic" src="${L}/skill/${steps.find(s => s.k === "drink").d}.png" alt=""></span><b>${tickets}</b></span>` : ""}
     ${chunks ? `<span class="lc" data-tip="Ability chunks"><img class="chunkbare" src="${CHUNKIMG}" alt="" style="width:22px;height:22px"><b>${chunks}</b></span>` : ""}
     ${snails ? `<span class="lc" data-tip="Super Sea Snails">${SNAIL}<b>${snails}</b></span>` : ""}
@@ -148,7 +163,7 @@ export function laneCost(steps) {
 // go into the rolls chip's tooltip
 const COSTDROP = ["Super Sea Snails", "Drink tickets"];
 export function fitCosts(host) {
-  for (const k of host.querySelectorAll(".lanes > .lane .lend > .lcost")) {
+  for (const k of host.querySelectorAll(".lanes > .lane .lend > .lcost:not(.nr)")) {   // .nr: a finished lane, no rolls chip to fold into
     const w = k.parentElement.clientWidth, chips = [...k.children], rolls = chips[0];
     if (!w || !rolls) continue;
     k.classList.remove("tight"); for (const c of chips) c.hidden = false; rolls.dataset.tip = "Rolls left";
@@ -982,8 +997,9 @@ function draw(b, raw, totals) {                                // raw: lanes wit
         <div class="lnow">${gear(l.row)}<div class="have">${headMain(jobOf(l, b, li))}${l.have.map((h, i) => haveSlot(h, i, l.open)).join("")}</div></div>
         ${l.note ? `<div class="lnote">${esc(l.note)}</div>`
           : l.searching ? searchBox
+          : laneDone(l) ? doneTape(b, l, li)
           : (t => l.far ? farBox(l, t) : t)(`<div class="tview"><div class="track grid" style="grid-template-columns:repeat(${cols.length}, var(--col))">${laneSteps(l.steps.map((s, i) => ({ ...s, here: i === 0 })), cols)}</div></div>`)}
-        <div class="lend">${l.note ? "" : capBox(li, caps[li], ui.useChunks)}<div class="goal">${goalMain(jobOf(l, b, li))}${l.goal.map(g => slot(g, 36)).join("")}</div>${l.note || l.searching ? "" : laneCost(l.steps)}</div>
+        <div class="lend">${l.note ? "" : capBox(li, caps[li], ui.useChunks)}<div class="goal">${goalMain(jobOf(l, b, li))}${l.goal.map(g => slot(g, 36)).join("")}</div>${l.note || l.searching ? "" : laneCost(l.steps, laneDone(l))}</div>
       </div>`).join("")}
     </div>
   </div>`;
@@ -991,7 +1007,7 @@ function draw(b, raw, totals) {                                // raw: lanes wit
     const f = document.activeElement?.closest?.("#path .ccap")?.dataset.cap;   // a cap in use keeps the focus through the redraw
     const calc = host.querySelector(".lanes > .pcalc"), calcAt = calc && calcSaved(host, calc), oldNext = host.querySelector(".pl > .pcnext"), nextAt = oldNext && calcSaved(host, oldNext);
     const put = holdScroll(host), up = upSave(host), lt = landSave();
-    host.innerHTML = lastHtml = html; tipAttach(host); fitTitles(host); fitCosts(host); pcFit(host); pan.drawn(host, b.id); put(); fadeCaps(host); busyFade(host);   // put after the pan bar is back under the lanes: it's part of the height
+    host.innerHTML = lastHtml = html; tipAttach(host); fitTitles(host); fitCosts(host); pcFit(host); pan.drawn(host, b.id); put(); fadeCaps(host); busyFade(host); donePop(host);   // put after the pan bar is back under the lanes: it's part of the height
     upSwap(host, up);
     if (calcAt && !host.querySelector(".lanes > .pcalc")) calcLand(host, b, calc, calcAt, oldNext, nextAt);
     else {
