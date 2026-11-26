@@ -82,7 +82,10 @@ def main(argv=None):
     from .splatnet import SplatnetSource
     botbase = BotbaseSource(hub, **cfg["switch"])
     splatnet = SplatnetSource(hub, mode=cfg["splatnet"]["every"])
-    settings.on_change(lambda new, old: (botbase.configure(**new["switch"]), splatnet.set_mode(new["splatnet"]["every"])))
+    from .discord_rpc import Presence, from_hub
+    discord = Presence(lambda: from_hub(hub), level=cfg["discord"]["level"])
+    settings.on_change(lambda new, old: (botbase.configure(**new["switch"]), splatnet.set_mode(new["splatnet"]["every"]),
+                                         discord.configure(new["discord"]["level"])))
 
     from .server import App
     from .updater import Updater
@@ -124,6 +127,8 @@ def main(argv=None):
 
     for s in (botbase, splatnet):
         threading.Thread(target=s.run, args=(stop,), daemon=True, name=s.name).start()
+    discord_thread = threading.Thread(target=discord.run, args=(stop,), daemon=True, name=discord.name)
+    discord_thread.start()
     if cfg.get("updates", {}).get("auto", True):
         threading.Thread(target=updater.check, daemon=True, name="updater").start()
     clog.get().info("Listening at %s", url)
@@ -143,6 +148,8 @@ def main(argv=None):
         stop.set()
         botbase.wake.set()
         splatnet.wake.set()
+        discord.wake.set()
+        discord_thread.join(3.0)                      # it clears the card on its way out
         if tray is not None:
             tray.stop()
         server.server_close()
