@@ -295,7 +295,10 @@ class Presence:
         key = (st.get("place"), st.get("mode"))
         if key != self._key or self._squid is None or st.get("stage") != self._stage:
             self._stage = st.get("stage")                          # a new place or stage restarts the timer
-            self._key, self._squid, self._since = key, self.rng.choice(SQUIDS), self.wall()
+            new_game = st.get("place") == "match" and (self._key or (None,))[0] != "match"
+            if self._squid is None or new_game:                    # the squid's color changes per game, not per lobby screen
+                self._squid = self.rng.choice(SQUIDS)
+            self._key, self._since = key, self.wall()
         st.setdefault("squid", self._squid)
         st.setdefault("since", self._since if key != (None, None) else self._session)
         st.setdefault("session", self._session)
