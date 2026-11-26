@@ -235,6 +235,21 @@ class Adapter(unittest.TestCase):
         self.assertEqual(D.from_hub(Hub, now=played + 193 + 60), {"mode": "anarchy", "rule": "Vgl", "stage": "Vss_Factory00",
                                                                   "grade": "B+", "since": played})
         self.assertEqual(D.from_hub(Hub, now=played + 193 + D.FRESH + 1), {})
+        Hub.snapshots = {"botbase": {"place": "room", "party": 2, "partyMax": 4, "rule": "Vgl", "rank": {"grade": "B+", "points": 664}}}
+        Hub.status = {"botbase": {"state": "ok"}}                # the Switch is live: its values win over SplatNet's match
+        self.assertEqual(D.from_hub(Hub, now=played + 193 + 60), {"place": "lobby", "party": [2, 4]})
+        Hub.snapshots["botbase"].update(place="match", stage="Vss_Scrap01")
+        sched = {"data": {"bankaraSchedules": {"nodes": [{"startTime": "2026-11-22T14:00:00Z", "endTime": "2026-11-22T16:00:00Z",
+                 "bankaraMatchSettings": [{"bankaraMode": "CHALLENGE", "vsRule": {"rule": "GOAL"},
+                                           "vsStages": [{"name": "Mincemeat Metalworks"}]}]}]}}}
+        old, D.schedules = D.schedules, D.Schedules(fetch=lambda: sched)
+        try:
+            self.assertEqual(D.from_hub(Hub, now=played + 193 + 60), {"place": "match", "stage": "Vss_Scrap01", "rule": "Vgl",
+                                                                      "mode": "anarchy", "kind": "series", "grade": "B+", "party": [2, 4]})
+        finally:
+            D.schedules = old
+        Hub.status = {"botbase": {"state": "error"}}             # Switch gone: back to SplatNet's last match
+        self.assertEqual(D.from_hub(Hub, now=played + 193 + 60)["stage"], "Vss_Factory00")
 
 
 class Setting(unittest.TestCase):
