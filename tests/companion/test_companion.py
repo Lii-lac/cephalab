@@ -916,5 +916,38 @@ class Presence(unittest.TestCase):
         self.assertEqual(solo.count(), (1, 4))
 
 
+
+class AutoFind(unittest.TestCase):
+    """After a game restart the outfit moves; the poll loop starts the find by itself once the save sits still."""
+
+    def test_starts_only_when_settled_and_missing(self):
+        import time
+        from companion.botbase_source import BotbaseSource
+        from s3seed import stock as S
+        with tempfile.TemporaryDirectory() as d:
+            bot = BotbaseSource(Hub(Path(d) / "state"), "127.0.0.1", 1)
+            calls = []
+            bot.equip_find = lambda: calls.append(1) or True
+            bot.settled = lambda: True
+            bot._worn_ok, bot._hit = False, set(S.KINDS)
+            bot._auto_find()
+            self.assertEqual(len(calls), 1)                       # missing, settled, stock in place: starts
+            bot._worn_ok = True
+            bot._auto_find()
+            self.assertEqual(len(calls), 1)                       # outfit where it was: nothing to find
+            bot._worn_ok, bot._hit = False, set()
+            bot._auto_find()
+            self.assertEqual(len(calls), 1)                       # stock not read where it was: the save may be moving
+            bot._hit, bot.settled = set(S.KINDS), (lambda: False)
+            bot._auto_find()
+            self.assertEqual(len(calls), 1)                       # unsettled: never
+            bot.settled, bot._find = (lambda: True), {"state": "ambiguous", "endedAt": time.time()}
+            bot._auto_find()
+            self.assertEqual(len(calls), 1)                       # a find just came up empty: wait AUTO_FIND_RETRY
+            bot._find["endedAt"] = time.time() - 200
+            bot._auto_find()
+            self.assertEqual(len(calls), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
