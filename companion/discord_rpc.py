@@ -128,9 +128,9 @@ def _num(v):
 
 def card(state: dict, level: str, rng) -> dict | None:
     """The activity for this state at this level, or None (off). rng picks the squid when state has none."""
-    if level not in ("basic", "full"):
-        return None
     state = state or {}
+    if level not in ("basic", "full") or state.get("closed"):
+        return None
     squid = state.get("squid") if state.get("squid") in SQUIDS else rng.choice(SQUIDS)
     basic: dict = {"assets": {"large_image": f"{BASE}squid/{squid}.png", "large_text": "Splatoon 3"}}
     if _num(state.get("session")) is not None:
@@ -532,7 +532,10 @@ def from_hub(hub, now=None) -> dict:
     st: dict = {}
     now = time.time() if now is None else now
     snap = hub.snapshots.get("botbase") or {}
-    ok = (hub.status.get("botbase") or {}).get("state") == "ok"
+    bs = (hub.status.get("botbase") or {}).get("state")
+    if bs == "waiting":
+        return {"closed": True}        # the Switch answers but Splatoon 3 isn't running: no card, not an old SplatNet match
+    ok = bs == "ok"
     if ok and snap.get("weapon") is not None:
         row = weapon_row(snap["weapon"])
         if row:
