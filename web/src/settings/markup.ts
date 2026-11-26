@@ -64,6 +64,12 @@ export const SETTINGS_HTML = `<div class="st-page">
             <div class="st-seg st-ctl" role="radiogroup" aria-label="SplatNet" data-key="check"><button data-v="battle" class="on">Each battle</button><button data-v="5min">5 min</button><button data-v="off">Off</button></div>
           </div>
         </div>
+        <div class="st-grp">
+          <div class="st-slab" data-api>
+            <span class="st-lbl">Discord</span>
+            <div class="st-seg st-ctl" role="radiogroup" aria-label="Discord" data-key="discord"><button data-v="off">Off</button><button data-v="basic" class="on">Basic</button><button data-v="full">Full</button></div>
+          </div>
+        </div>
       </section>
 
       <!-- Display: motion, zoom, contrast -->
