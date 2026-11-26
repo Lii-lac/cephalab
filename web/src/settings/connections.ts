@@ -34,6 +34,7 @@ function fromLive() {
 export function mountSwitch() {
   const ip = $<HTMLInputElement>("#ip"), port = $<HTMLInputElement>("#port"), msg = $("#swMsg"), test = $<HTMLButtonElement>("#test");
   const read = seg($("[data-key=read]"), async v => { const e = await saveCfg({ switch: { every: +v } }); say(msg, e || "Saved", !!e); });
+  const discord = seg($("[data-key=discord]"), async v => { await saveCfg({ discord: { level: v } }); });
   const check = (): { host: string; port: number } | null => {
     const host = ip.value.trim(), p = port.value.trim();
     const badIp = !!host && !IP.test(host), badPort = !/^\d{1,5}$/.test(p) || +p < 1 || +p > 65535;
@@ -67,6 +68,7 @@ export function mountSwitch() {
     if (!cfg) return;
     ip.value = cfg.switch.host || ""; port.value = String(cfg.switch.port || 6000);
     read(String(cfg.switch.every));
+    discord(cfg.discord?.level || "basic");
     fromLive();
   });
   subscribe(() => { if (cfg) fromLive(); });
