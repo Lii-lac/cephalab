@@ -20,7 +20,7 @@ CAPSULES = 0xBA226BC8       # u32 capsules (followed by u32 99, the max)
 RULES = ("Pnt", "Var", "Vlf", "Vgl", "Vcl")      # Turf War, Splat Zones, Tower Control, Rainmaker, Clam Blitz
 GRADES = ("C-", "C", "C+", "B-", "B", "B+", "A-", "A", "A+", "S", "S+")
 EVP_AT = 800                 # Salmon Run points at Eggsecutive VP 0 (840 = EVP 40)
-SCENES = {11: "lobby", 24: "room", 23: "matchroom", 3: "hub", 4: "alterna", 6: "order", 8: "grizzco", 0: "shop",
+SCENES = {11: "lobby", 24: "room", 23: "matchroom", 12: "matchroom", 13: "matchroom", 3: "hub", 4: "alterna", 6: "order", 8: "grizzco", 0: "shop",
           15: "recon", 19: "recon", 26: "results"}
 LOBBY = (11, 24)             # where a party forms
 HOLD_S = 20.0                # the room list holds still this long before it is the party
@@ -90,11 +90,16 @@ def stage_names() -> dict[int, str]:
     return out
 
 
+LOBBY_KEY = 885812243           # scene-name key of every battle lobby (regular, anarchy, Challenge: scene 9, 11, ...)
+
+
 def place(scene: int, key: int) -> str | None:
     """The place for a scene id and scene key: a SCENES name, "match" (a stage key in any other scene), or None (unknown:
     keep the previous place)."""
     if scene in SCENES:
         return SCENES[scene]
+    if key == LOBBY_KEY:
+        return "lobby"                 # a lobby scene id we haven't met (the Challenge lobby reads 9)
     if key in stage_rows():
         return "match"
     return None
