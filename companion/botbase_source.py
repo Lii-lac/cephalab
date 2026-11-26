@@ -11,6 +11,7 @@ from s3seed import player as P
 from s3seed import equip as E
 from s3seed import gear_find as GF
 from s3seed import stock as S
+from s3seed import presence as PR
 from s3seed.botbase import Botbase, BotbaseError, NoGame
 
 from .hub import Hub
@@ -33,6 +34,7 @@ SETTLE_S = 45.0
 SETTLE_POLLS = 2
 HEARTBEAT_S = 5.0       # a stock search re-reads the first headgear records this often; a change or error stops it
 DRINK_RETRY = 300.0     # seconds after a drink find came up empty before the next (windows up to 160 KB, s3seed/drink.py)
+PRESENCE_EVERY = 3.0    # a light presence look (place, party, rank: s3seed/presence.py, six small fixed peeks) between polls
 # A find reads a lot while the game is held still: it may only run when settled, with the stock where it was (the save isn't
 # moving) and with _search_cancel()'s heartbeat. Without those, one ran during a load screen on 2026-11-22 and froze the game.
 
@@ -79,6 +81,9 @@ class BotbaseSource:
         self._player: str | None = None              # the player's name, read once per connection and drink address
         self._player_at: int | None = None
         self._worn_ok = self._drink_ok = False       # the last poll's outfit / drink read found it (a miss right after unsettles)
+        self._pr = PR.Live()                         # presence for the Discord card: the values that held, the party
+        self._pr_prev: dict | None = None            # the last presence read (a value counts once two reads agree)
+        self._pr_vals: dict = {}
 
     def _unsettle(self):
         self._calm_from, self._good = time.monotonic(), 0
@@ -210,7 +215,7 @@ class BotbaseSource:
                 n[g.type] = n.get(g.type, 0) + 1
         self.reads = getattr(self, "reads", []) + ["light" if light else "full"]   # for tests
         snap = {"source": self.name, "gameVersion": self.version, "pieces": [piece(g) for g in fresh],
-                "xpGainMax": self._gains(fresh, watch)}
+                "xpGainMax": self._gains(fresh, watch), **self._pr_vals}
         path, head = self.hub.dir / "stock_offsets.json", G._head + (self.dlc or 0)
         epath, dpath = self.hub.dir / "equip_offsets.json", self.hub.dir / "drink_offsets.json"
         worn = E.worn(self.bot, epath, head)                         # one small read where the outfit was (never a search)
@@ -418,7 +423,7 @@ class BotbaseSource:
                 with self._io:
                     self.poll_once()
                 backoff = 2
-                self._wait(self.every)
+                self._between(stop)
             except NoGame as e:
                 self._drop()
                 self.hub.set_status(self.name, "waiting", str(e))
@@ -431,8 +436,49 @@ class BotbaseSource:
                 backoff = min(backoff * 2, 30)
         self._drop()
 
+    def presence_once(self) -> bool:
+        """One presence look (six small peeks at fixed addresses, never a search; the only read allowed in a poll that saw
+        a miss). A value counts once two reads in a row agree (loads pass through scenes 0/1/2/7); a failed read unsettles
+        and the card keeps the last good values."""
+        try:
+            raw = PR.read(self.bot)
+        except (BotbaseError, OSError):
+            self._pr_prev = None
+            self._unsettle()
+            return False
+        prev, self._pr_prev = self._pr_prev, raw
+        if prev is None:
+            return True
+        held = {k: v for k, v in raw.items() if prev.get(k) == v}
+        held["names"] = raw["names"]                 # the party rule does its own holding (and needs every read for a burst)
+        vals = self._pr.update(time.monotonic(), held)
+        if vals != self._pr_vals:
+            self._pr_vals = vals
+            self.hub.presence(self.name, vals)
+        return True
+
+    def _between(self, stop: threading.Event):
+        """Wait out self.every until the next poll, a presence look every PRESENCE_EVERY s on the same connection (the rest
+        after the last read spent outside the lock, like a find's slices). A configure() ends the wait."""
+        end = time.monotonic() + self.every
+        while not stop.is_set():
+            left = end - time.monotonic()
+            if left <= 0:
+                return
+            if self.wake.wait(min(PRESENCE_EVERY, left)):
+                self.wake.clear()
+                return
+            if not self.bot.sock or self.dlc is None:
+                return
+            self.bot.settle()
+            with self._io:
+                ok = self.presence_once()
+            if not ok and not self.bot.sock:
+                return                                   # the connection went: the loop reconnects
+
     def _drop(self):
         self._find_stop.set()
+        self._pr_prev = None
         try:
             self.bot.close()
         except OSError:
