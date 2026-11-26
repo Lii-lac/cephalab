@@ -1,0 +1,367 @@
+"""Discord Rich Presence through the Discord desktop app's local pipe (stdlib only, Windows).
+
+card(state, level, rng) builds the activity; Presence keeps it on Discord: at most one SET_ACTIVITY per 15 s, only when
+the card changed, the newest state wins, and it is cleared on stop and when the level goes "off". Discord not running is
+not an error: it reconnects quietly (back off to 30 s). Nothing here raises into the caller.
+
+state (every key optional; what isn't known is left off the card, never guessed):
+    place     "splatsville" | "alterna" | "grizzco" | "lobby"
+    mode      "anarchy" | "turf" | "xbattle" | "private" | "challenge" | "salmon"
+    rule      "Pnt" style code or the English name ("Tower Control")
+    stage     the stage's __RowId (VersusSceneInfo.json; CoopSceneInfo.json for salmon)
+    weapon    WeaponInfoMain.json __RowId           grade "S+" with rank 4 -> "S+4"       xpower 2140
+    party     [n, max]      salmometer 0-5          since / session  unix seconds (Presence fills them in)
+    stage_name, squid   a name or color to use as is
+"""
+import json
+import os
+import random
+import struct
+import threading
+import time
+import uuid
+
+from . import log as clog
+
+CLIENT_ID = "1575317865286860880"                 # public: it ships in the app, IPC needs no secret
+BASE = "https://raw.githubusercontent.com/Lii-lac/cephalab/rpc-assets/"
+BUTTON = {"label": "Cephalab", "url": "https://github.com/Lii-lac/cephalab"}
+EVERY = 15.0                                       # Discord's own limit: one update per 15 s
+BACKOFF = (1.0, 2.0, 5.0, 10.0, 30.0)
+LEVELS = ("off", "basic", "full")
+SQUIDS = ("blue", "cyan", "orange", "purple", "red", "yellow")
+MODES = ("anarchy", "turf", "xbattle", "private", "challenge", "salmon")
+SOLO = ("xbattle", "challenge")                    # solo queues: no party line
+PLACES = {"splatsville": "In Splatsville", "alterna": "In Alterna", "grizzco": "At Grizzco", "lobby": "In the Lobby"}
+PLACE_SHORT = {"splatsville": "Splatsville", "alterna": "Alterna", "grizzco": "Grizzco", "lobby": "Lobby"}
+MODE_NAMES = {"anarchy": "Anarchy Battle", "turf": "Turf War", "xbattle": "X Battle", "private": "Private Battle",
+              "challenge": "Challenge", "salmon": "Salmon Run"}
+OP_HANDSHAKE, OP_FRAME, OP_CLOSE, OP_PING, OP_PONG = 0, 1, 2, 3, 4
+
+
+# --- frames: little-endian uint32 opcode + uint32 length + UTF-8 JSON
+
+def encode(op: int, payload: dict) -> bytes:
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    return struct.pack("<II", op, len(body)) + body
+
+
+def decode(read) -> tuple[int, dict]:
+    """One frame from read(n) -> bytes (a short read means the pipe closed)."""
+    head = _exactly(read, 8)
+    op, n = struct.unpack("<II", head)
+    if n > 1 << 20:
+        raise OSError("Discord sent an oversized frame")
+    return op, json.loads(_exactly(read, n).decode("utf-8")) if n else {}
+
+
+def _exactly(read, n: int) -> bytes:
+    out = b""
+    while len(out) < n:
+        chunk = read(n - len(out))
+        if not chunk:
+            raise OSError("Discord closed the pipe")
+        out += chunk
+    return out
+
+
+# --- names (from the datamined game text we already ship)
+
+_names: dict = {}
+
+
+def _text(table: str) -> dict:
+    if not _names:
+        try:
+            from s3seed.seedmath import DATA
+            raw = json.loads((DATA / "USen.json").read_text(encoding="utf-8"))
+            for k in ("CommonMsg/VS/VSStageName", "CommonMsg/Coop/CoopStageName", "CommonMsg/VS/VSRuleName", "CommonMsg/Weapon/WeaponName_Main"):
+                _names[k] = raw.get(k, {})
+        except (OSError, ValueError, ImportError):
+            _names["-"] = {}
+    return _names.get(table, {})
+
+
+def weapon_row(wid) -> str:
+    """The weapon's row id for a game weapon id, "" when unknown (the adapter's way in)."""
+    try:
+        from s3seed import equip
+        return equip.weapon_row(wid)
+    except Exception:
+        return ""
+
+
+def _stage_name(state: dict) -> str:
+    if state.get("stage_name"):
+        return str(state["stage_name"])
+    code = state.get("stage")
+    for t in (("CommonMsg/Coop/CoopStageName",) if state.get("mode") == "salmon" else ("CommonMsg/VS/VSStageName",)):
+        for c in (code, str(code).split("_", 1)[-1] if "_" in str(code) else None):
+            if c and c in _text(t):
+                return _text(t)[c].replace("\n", " ")
+    return ""
+
+
+def _rule_name(rule) -> str:
+    if not isinstance(rule, str) or not rule:
+        return ""
+    t = _text("CommonMsg/VS/VSRuleName")
+    if rule in t:
+        return t[rule].replace("\n", " ")
+    return rule if rule in t.values() else ""
+
+
+def _num(v):
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+# --- the card
+
+def card(state: dict, level: str, rng) -> dict | None:
+    """The activity for this state at this level, or None (off). rng picks the squid when state has none."""
+    if level not in ("basic", "full"):
+        return None
+    state = state or {}
+    squid = state.get("squid") if state.get("squid") in SQUIDS else rng.choice(SQUIDS)
+    basic: dict = {"assets": {"large_image": f"{BASE}squid/{squid}.png", "large_text": "Splatoon 3"}}
+    if _num(state.get("session")) is not None:
+        basic["timestamps"] = {"start": int(state["session"])}
+    if level == "basic":
+        return basic
+
+    place, mode = state.get("place"), state.get("mode")
+    place = place if place in PLACES else None
+    mode = mode if mode in MODES else None
+    assets: dict = {}
+    act: dict = {}
+
+    # details: one line
+    if mode:
+        name = _rule_name(state.get("rule")) if mode in ("anarchy", "xbattle", "private", "challenge") else ""
+        name = name or MODE_NAMES[mode]
+        extra = ""
+        if mode == "anarchy" and isinstance(state.get("grade"), str) and state["grade"]:
+            r = _num(state.get("rank"))
+            extra = state["grade"] + (str(int(r)) if r is not None else "")
+        elif mode == "xbattle" and _num(state.get("xpower")) is not None:
+            extra = f"{int(round(state['xpower']))} XP"
+        elif mode == "salmon" and _num(state.get("rank")) is not None:
+            extra = f"EVP {int(state['rank'])}"
+        act["details"] = f"{name} · {extra}" if extra else name
+    elif place:
+        act["details"] = PLACES[place]
+
+    # large image: the stage in its mode's frame, else the squid
+    stage, staged = state.get("stage"), False
+    if mode and isinstance(stage, str) and stage:
+        staged = True
+        assets["large_image"] = f"{BASE}stage/{mode}/{stage}.png"
+        sn = _stage_name(state)
+        if sn:
+            assets["large_text"] = sn
+    else:
+        assets["large_image"] = basic["assets"]["large_image"]
+        assets["large_text"] = PLACE_SHORT[place] if place and not mode else "Splatoon 3"
+
+    # small image: the Salmometer in Salmon Run, the weapon in battle (or when we don't know where you are)
+    wp, sm = state.get("weapon"), state.get("salmometer")
+    if mode == "salmon":
+        if isinstance(sm, int) and not isinstance(sm, bool) and 0 <= sm <= 5:
+            assets["small_image"] = f"{BASE}salmometer/{sm}.png"
+            assets["small_text"] = f"Cohozuna · Salmometer {sm}/5"
+    elif (mode or not place) and isinstance(wp, str) and wp:
+        assets["small_image"] = f"{BASE}weapon/{wp}.png"
+        wn = _text("CommonMsg/Weapon/WeaponName_Main").get(wp)
+        if wn:
+            assets["small_text"] = wn
+
+    # party: only when known, never in a solo queue
+    pt = state.get("party")
+    if mode not in SOLO and isinstance(pt, (list, tuple)) and len(pt) == 2 and all(isinstance(x, int) and not isinstance(x, bool) for x in pt) and 1 <= pt[0] <= pt[1]:
+        act["party"] = {"id": "cephalab", "size": [pt[0], pt[1]]}
+
+    if not (act or staged or "small_image" in assets):
+        return basic
+    act["assets"] = assets
+    since = _num(state.get("since")) if _num(state.get("since")) is not None else _num(state.get("session"))
+    if since is not None:
+        act["timestamps"] = {"start": int(since)}
+    act["buttons"] = [dict(BUTTON)]
+    return act
+
+
+# --- the pipe
+
+class Pipe:
+    """The named pipe to the Discord desktop app (first of discord-ipc-0..9 that opens), handshaken."""
+
+    def __init__(self, f):
+        self.f = f
+
+    @classmethod
+    def open(cls, client_id: str = CLIENT_ID, path=r"\\?\pipe\discord-ipc-%d"):
+        last = None
+        for i in range(10):
+            try:
+                f = open(path % i, "r+b", buffering=0)
+            except OSError as e:
+                last = e
+                continue
+            p = cls(f)
+            try:
+                p.send(OP_HANDSHAKE, {"v": 1, "client_id": client_id})
+                p.recv()                                   # READY
+                return p
+            except Exception as e:
+                last = e
+                p.close()
+        raise OSError(f"Discord isn't running ({last})")
+
+    def send(self, op: int, payload: dict):
+        self.f.write(encode(op, payload))
+
+    def recv(self) -> tuple[int, dict]:
+        return decode(self.f.read)
+
+    def set_activity(self, activity: dict | None):
+        self.send(OP_FRAME, {"cmd": "SET_ACTIVITY", "args": {"pid": os.getpid(), "activity": activity}, "nonce": str(uuid.uuid4())})
+        while True:                                        # its reply (PING from Discord is answered, anything else ends)
+            op, body = self.recv()
+            if op == OP_PING:
+                self.send(OP_PONG, body)
+            elif op == OP_CLOSE:
+                raise OSError("Discord closed the connection")
+            else:
+                if body.get("evt") == "ERROR":
+                    clog.get().info("Discord refused the activity: %s", body.get("data"))
+                return
+
+    def close(self):
+        try:
+            self.f.close()
+        except Exception:
+            pass
+
+
+_UNSET = object()
+
+
+class Presence:
+    """Keeps the card on Discord. source() -> state dict (the feeding side); open() -> a Pipe (a test passes a fake)."""
+    name = "discord"
+
+    def __init__(self, source=None, level: str = "basic", open=Pipe.open, clock=time.monotonic, wall=time.time, rng=None):
+        self.source, self.level = source or (lambda: {}), level if level in LEVELS else "basic"
+        self._open, self.clock, self.wall = open, clock, wall
+        self.rng = rng or random.Random()
+        self.wake = threading.Event()
+        self.lock = threading.Lock()
+        self.pipe = None
+        self._sent = _UNSET                         # what Discord shows now (_UNSET: unknown, e.g. just connected)
+        self._last_send = None
+        self._fail = 0
+        self._retry_at = 0.0
+        self._key = None                            # (place, mode): the card's look; a new one rerolls squid + timer
+        self._squid, self._since = None, None
+        self._session = wall()
+        self.sends = 0
+
+    def configure(self, level: str):
+        if level in LEVELS and level != self.level:
+            with self.lock:
+                self.level = level
+            self.wake.set()
+
+    def _state(self) -> dict:
+        try:
+            st = dict(self.source() or {})
+        except Exception:
+            clog.get().exception("Discord state feed failed")
+            st = {}
+        key = (st.get("place"), st.get("mode"))
+        if key != self._key or self._squid is None:
+            self._key, self._squid, self._since = key, self.rng.choice(SQUIDS), self.wall()
+        st.setdefault("squid", self._squid)
+        st.setdefault("since", self._since if key != (None, None) else self._session)
+        st.setdefault("session", self._session)
+        return st
+
+    def step(self) -> float:
+        """Do what is due; return the seconds until the next look."""
+        try:
+            return self._step()
+        except Exception:
+            clog.get().exception("Discord presence step failed")
+            self._drop()
+            return 30.0
+
+    def _step(self) -> float:
+        now = self.clock()
+        with self.lock:
+            level = self.level
+        want = card(self._state(), level, self.rng) if level != "off" else None
+        if want is None and self._sent in (_UNSET, None):
+            if level == "off" and self.pipe is not None:
+                self._drop()                        # nothing shown: no reason to hold the pipe
+            return 5.0
+        if want == self._sent:
+            return 2.0
+        if want is not None and self._last_send is not None and now - self._last_send < EVERY:
+            return max(0.2, EVERY - (now - self._last_send))     # newest state wins: send it when the 15 s are up
+        if now < self._retry_at:
+            return self._retry_at - now
+        return self._send(want, now)
+
+    def _send(self, want, now) -> float:
+        try:
+            if self.pipe is None:
+                self.pipe = self._open()
+                self._sent = _UNSET
+            self.pipe.set_activity(want)
+        except Exception as e:
+            self._drop()
+            wait = BACKOFF[min(self._fail, len(BACKOFF) - 1)]
+            if self._fail == 0:
+                clog.get().info("Discord isn't reachable (%s); trying again quietly", e)
+            self._fail += 1
+            self._retry_at = now + wait
+            return wait
+        self._fail, self._retry_at = 0, 0.0
+        self._sent, self._last_send = want, now
+        self.sends += 1
+        return 2.0
+
+    def _drop(self):
+        if self.pipe is not None:
+            self.pipe.close()
+        self.pipe, self._sent = None, _UNSET
+
+    def run(self, stop: threading.Event):
+        try:
+            while not stop.is_set():
+                delay = self.step()
+                self.wake.wait(min(delay, 5.0))
+                self.wake.clear()
+        finally:
+            self.close()
+
+    def close(self):
+        """Clear the card (no waiting for the 15 s) and let go of the pipe."""
+        if self.pipe is not None and self._sent not in (_UNSET, None):
+            try:
+                self.pipe.set_activity(None)
+            except Exception:
+                pass
+        self._drop()
+
+
+def from_hub(hub) -> dict:
+    """The adapter: what the Discord card can use from what the hub knows. Today only the weapon is live; the place,
+    mode, stage, party and Salmometer arrive here later from new Switch reads."""
+    st: dict = {}
+    snap = hub.snapshots.get("botbase") or {}
+    if (hub.status.get("botbase") or {}).get("state") == "ok" and snap.get("weapon") is not None:
+        row = weapon_row(snap["weapon"])
+        if row:
+            st["weapon"] = row
+    return st
