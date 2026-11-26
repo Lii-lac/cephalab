@@ -84,3 +84,30 @@ def explain_change(old: int, new: int, brand: str, max_steps: int = 64) -> int |
         if s == new:
             return i
     return None
+
+
+def murmur3_32(data: bytes | str, seed: int = 0) -> int:
+    """MurmurHash3 x86 32-bit (the game hashes its names and save fields with it, seed 0)."""
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    c1, c2, h, n = 0xCC9E2D51, 0x1B873593, seed & MASK, len(data)
+    for i in range(0, n - n % 4, 4):
+        k = int.from_bytes(data[i:i + 4], "little")
+        k = (k * c1) & MASK
+        k = ((k << 15) | (k >> 17)) & MASK
+        h ^= (k * c2) & MASK
+        h = ((h << 13) | (h >> 19)) & MASK
+        h = (h * 5 + 0xE6546B64) & MASK
+    tail = data[n - n % 4:]
+    if tail:
+        k = int.from_bytes(tail, "little")
+        k = (k * c1) & MASK
+        k = ((k << 15) | (k >> 17)) & MASK
+        h ^= (k * c2) & MASK
+    h ^= n
+    h ^= h >> 16
+    h = (h * 0x85EBCA6B) & MASK
+    h ^= h >> 13
+    h = (h * 0xC2B2AE35) & MASK
+    h ^= h >> 16
+    return h
