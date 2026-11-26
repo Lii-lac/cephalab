@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.2 (2026-11-26)
+
+- After you restart Splatoon 3, Cephalab finds your outfit again by itself once the game settles, so your weapon comes back on the Discord card without opening Cephalab.
+
 ## v0.2.1 (2026-11-26)
 
 - Discord Rich Presence works on Mac, the same card as on Windows.
