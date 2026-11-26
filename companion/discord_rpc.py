@@ -33,6 +33,7 @@ BACKOFF = (1.0, 2.0, 5.0, 10.0, 30.0)
 LEVELS = ("off", "basic", "full")
 SQUIDS = ("blue", "cyan", "orange", "purple", "red", "yellow")
 MODES = ("anarchy", "turf", "xbattle", "private", "challenge", "salmon")
+WEAPON_MODES = ("anarchy", "turf", "xbattle", "private", "challenge")   # weapon badges baked in each mode's color
 SOLO = ("xbattle", "challenge")                    # solo queues: no party line
 PLACES = {"splatsville": "In Splatsville", "alterna": "In Alterna", "grizzco": "At Grizzco", "lobby": "In the Lobby",
           "matchroom": "In a battle room", "order": "In the Order Sector", "shop": "Shopping", "recon": "Recon",
@@ -183,7 +184,7 @@ def card(state: dict, level: str, rng) -> dict | None:
             assets["small_image"] = f"{BASE}salmometer/{sm}.png"
             assets["small_text"] = f"Cohozuna · Salmometer {sm}/5"
     elif (mode or not place) and isinstance(wp, str) and wp:
-        assets["small_image"] = f"{BASE}weapon/{wp}.png"
+        assets["small_image"] = f"{BASE}weapon/{mode}/{wp}.png" if mode in WEAPON_MODES else f"{BASE}weapon/{wp}.png"
         wn = _text("CommonMsg/Weapon/WeaponName_Main").get(wp)
         if wn:
             assets["small_text"] = wn
