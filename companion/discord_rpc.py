@@ -505,6 +505,8 @@ def from_hub(hub, now=None) -> dict:
         if isinstance(pt, int) and isinstance(mx, int):
             st["party"] = [pt, mx]
         return st
+    if ok and snap.get("seenAt") is not None and "rule" in snap:
+        return st                      # the Switch is live but the place isn't known yet: don't fall back to an old match
     m = getattr(hub, "last_match", None)
     if isinstance(m, dict) and _num(m.get("ended")) is not None and m.get("mode") in MODES \
             and now - m["ended"] < FRESH:
