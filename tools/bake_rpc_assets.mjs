@@ -119,6 +119,7 @@ html,body{margin:0;background:transparent}
 /* lobby squid */
 .sq::before{content:"";position:absolute;inset:0;background:var(--bg);background-blend-mode:var(--bl);filter:var(--f)}
 .sq img{position:absolute;left:12%;top:12%;width:76%;height:76%;object-fit:contain}
+.sqn img{position:absolute;left:6%;top:6%;width:88%;height:88%;object-fit:contain}
 /* stage in its mode frame */
 .fr{padding:${px(3)};box-sizing:border-box;background-image:repeating-linear-gradient(var(--ang),var(--s1) 0 ${px(5)},var(--s2) ${px(5)} ${px(10)})}
 .fr .in{position:relative;width:100%;height:100%;border-radius:${px(5.5)};overflow:hidden;background:#232428}
@@ -135,7 +136,7 @@ html,body{margin:0;background:transparent}
 const jobs = []; // {file, html, transparent}
 const add = (file, html) => jobs.push({ file, html });
 for (const [c, [bg, bl, f]] of Object.entries(SQUIDS))
-  add(`squid/${c}.png`, `<div class="t sq" style="--bg:${sub(bg)};--bl:${bl};--f:${f}"><img src="${url(asset(`assets/squids/${c}.svg`))}"></div>`);
+  add(`squid/${c}.png`, `<div class="t sqn"><img src="${url(asset(`assets/squids/${c}.svg`))}"></div>`);   // outlined squid alone, no tile (Alex 2026-11-26)
 for (const s of stages) for (const m of s.modes) {
   if (!stageFile[s.code]) continue;
   const [ang, s1, s2] = FRAMES[m];
@@ -153,7 +154,8 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: SZ, height: SZ }, deviceScaleFactor: 1 });
 await page.goto(url(page0));
 const sizes = {}; let total = 0;
-for (const j of jobs) {
+const ONLY = process.env.ONLY;   // e.g. ONLY=squid/ re-bakes just those
+for (const j of ONLY ? jobs.filter((j) => j.file.startsWith(ONLY)) : jobs) {
   await page.evaluate(async (html) => {
     document.body.innerHTML = html;
     await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
