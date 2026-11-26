@@ -1,8 +1,8 @@
 <h1 align="center">
-  <img src="docs/img/hero.png" width="100%" alt="Cephalab: Splatoon 3 gear builder and seed planner, no CFW required, with 3-piece joint seed paths and live sync via SplatNet or CFW.">
+  <img src="docs/img/hero.png" width="100%" alt="Cephalab: Splatoon 3 gear builder and seed planner, no CFW required, with live builds and paths and Discord Rich Presence.">
 </h1>
 
-**Cephalab** plans the shortest path of rolls, drink tickets, and chunks to finish your Splatoon 3 builds. Connect a Nintendo account or a modded Switch, pick a build, and it ticks every step forward as you play.
+**Cephalab** plans the shortest path of rolls, drink tickets, and chunks to finish your Splatoon 3 builds. Connect a Nintendo account or a modded Switch, pick a build, and it ticks every step forward as you play. While you do, your Discord profile shows what you're up to: the lobby, Grizzco, or the stage and mode of the match you're in, with your party.
 
 <p align="center">
   <a href="#install"><img src="docs/img/nav-install.png" height="46" alt="Install"></a>
@@ -16,17 +16,30 @@
 
 ### Install
 
-You need Windows 10 or 11 (or an Apple Silicon Mac) and either a Nintendo Switch Online account or a Switch running Atmosphere with [sys-botbase](https://github.com/olliz0r/sys-botbase/releases).
+You need either a Nintendo Switch Online account or a Switch running Atmosphere with [sys-botbase](https://github.com/olliz0r/sys-botbase/releases).
+
+#### Windows
+
+Windows 10 or 11.
 
 1. Download `cephalab.exe` from the latest release.
 2. Run it. It opens in your browser at `http://127.0.0.1:8765`.
-3. Open **Settings** (gear icon, top right) and connect:
-   - **Nintendo account:** Click **Sign in**, right-click *Select this person* on Nintendo's page, copy the link, and paste it back into Cephalab.
-   - **CFW Switch:** Install [sys-botbase](https://github.com/olliz0r/sys-botbase/releases), reboot into Atmosphere, and enter your Switch's IP (*System Settings → Internet*).
+
+#### Mac
+
+A Mac with Apple Silicon (M1 or newer).
+
+1. Download `Cephalab-macOS-arm64.zip` from the latest release, unzip it and drag **Cephalab** into Applications.
+2. Open it. The first time, macOS blocks it because it isn't notarized: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**. After that it opens normally, in your browser at `http://127.0.0.1:8765`.
+
+#### Connect
+
+Open **Settings** (gear icon, top right) and connect:
+
+- **Nintendo account:** Click **Sign in**, right-click *Select this person* on Nintendo's page, copy the link, and paste it back into Cephalab.
+- **CFW Switch:** Install [sys-botbase](https://github.com/olliz0r/sys-botbase/releases), reboot into Atmosphere, and enter your Switch's IP (*System Settings → Internet*).
 
 When your player name shows in the top-right pill, it's working.
-
-**On a Mac:** download `Cephalab-macOS-arm64.zip`, unzip it and drag **Cephalab** into Applications. The first time, macOS blocks it because it isn't notarized: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**. After that it opens normally.
 
 <details>
 <summary>Building from source</summary>
