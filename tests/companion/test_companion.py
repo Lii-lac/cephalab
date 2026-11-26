@@ -812,5 +812,48 @@ class RootDir(unittest.TestCase):
                     self.assertEqual(root_dir(), exe.resolve().parent)
 
 
+class Presence(unittest.TestCase):
+    def test_stage_names_from_known_hashes(self):
+        from s3seed import presence as PR
+        names = PR.stage_names()
+        self.assertEqual({h: names[h] for h in (3448801241, 3091052709, 2212797925, 3833858915, 3069060397)},
+                         {3448801241: "Scorch Gorge", 3091052709: "Mincemeat Metalworks", 2212797925: "Eeltail Alley",
+                          3833858915: "Manta Maria", 3069060397: "shop"})
+        self.assertEqual(PR.place(70, 3091052709), "match")
+        self.assertIsNone(PR.place(70, 885812243))              # the battle lobby's key in an unknown scene: keep the place
+
+    def test_party_rule(self):
+        from s3seed.presence import Party
+        p, t = Party(), 0.0
+
+        def feed(scene, names, secs):
+            nonlocal t
+            for _ in range(int(secs // 3)):
+                t += 3
+                p.update(t, scene, names)
+        feed(24, ["Alex", "Bo"], 6)
+        self.assertIsNone(p.count())                            # not held 20 s yet
+        feed(24, ["Alex", "Bo"], 21)
+        self.assertEqual(p.count(), (2, 4))
+        feed(24, ["Alex", "Bo", "R1", "R2", "R3"], 30)          # matchmaking fills the room: no one joins, even held
+        self.assertEqual(p.count(), (2, 4))
+        feed(70, ["Alex", "Bo", "R1", "R2", "R3", "R4", "R5", "R6"], 9)
+        feed(26, ["Alex", "Bo", "R1", "R2", "R3", "R4", "R5", "R6"], 6)
+        feed(23, ["Alex", "Bo", "R1"], 30)                      # play again after a match: still the party only
+        self.assertEqual(p.count(), (2, 4))
+        feed(23, ["Alex", "R1"], 3)                             # Bo left
+        self.assertEqual(p.count(), (1, 4))
+        self.assertEqual(p.me, "Alex")
+        solo, t = Party(), 0.0                                  # solo queue: lobby 11 -> matchmaking 23 fills with 8
+        for _ in range(8):
+            t += 3
+            solo.update(t, 11, ["Alex"])
+        self.assertEqual(solo.count(), (1, 4))
+        for _ in range(12):
+            t += 3
+            solo.update(t, 23, ["Alex", "R1", "R2", "R3", "R4", "R5", "R6", "R7"])
+        self.assertEqual(solo.count(), (1, 4))
+
+
 if __name__ == "__main__":
     unittest.main()
