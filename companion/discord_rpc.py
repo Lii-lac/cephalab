@@ -1,4 +1,4 @@
-"""Discord Rich Presence through the Discord desktop app's local pipe (stdlib only, Windows).
+"""Discord Rich Presence through the Discord desktop app's local pipe (stdlib only; Windows named pipe, macOS/Linux unix socket).
 
 card(state, level, rng) builds the activity; Presence keeps it on Discord: at most one SET_ACTIVITY per 15 s, only when
 the card changed, the newest state wins, and it is cleared on stop and when the level goes "off". Discord not running is
@@ -19,6 +19,7 @@ import os
 import random
 import re
 import struct
+import sys
 import threading
 import time
 import uuid
@@ -206,18 +207,65 @@ def card(state: dict, level: str, rng) -> dict | None:
 
 # --- the pipe
 
+WIN_PIPE = r"\\?\pipe\discord-ipc-%d"
+UNIX_DIRS = ("XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP")
+
+
+def unix_paths(env=None, isdir=os.path.isdir) -> list[str]:
+    """macOS/Linux: discord-ipc-0..9 in the first existing dir of $XDG_RUNTIME_DIR, $TMPDIR, $TMP, $TEMP, /tmp."""
+    env = os.environ if env is None else env
+    for base in [env.get(k) for k in UNIX_DIRS] + ["/tmp"]:
+        if base and isdir(base):
+            return [f"{base.rstrip('/')}/discord-ipc-{i}" for i in range(10)]
+    return []
+
+
+class _Sock:
+    """A connected AF_UNIX socket with the file calls Pipe uses (write sends it all; read may be short)."""
+
+    def __init__(self, s):
+        self.s = s
+
+    def write(self, b: bytes):
+        self.s.sendall(b)
+
+    def read(self, n: int) -> bytes:
+        return self.s.recv(n)
+
+    def close(self):
+        self.s.close()
+
+
+def _unix_connect(path: str):
+    import socket
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        s.settimeout(5)
+        s.connect(path)
+        s.settimeout(None)
+    except Exception:
+        s.close()
+        raise
+    return _Sock(s)
+
+
 class Pipe:
-    """The named pipe to the Discord desktop app (first of discord-ipc-0..9 that opens), handshaken."""
+    """The local pipe to the Discord desktop app (first of discord-ipc-0..9 that opens), handshaken.
+    Windows: the named pipe. macOS/Linux (or when connect is given): the AF_UNIX socket from unix_paths()."""
 
     def __init__(self, f):
         self.f = f
 
     @classmethod
-    def open(cls, client_id: str = CLIENT_ID, path=r"\\?\pipe\discord-ipc-%d"):
+    def open(cls, client_id: str = CLIENT_ID, path=WIN_PIPE, connect=None, env=None, isdir=os.path.isdir):
+        if connect is None and sys.platform == "win32":
+            targets, opener = [path % i for i in range(10)], lambda t: open(t, "r+b", buffering=0)
+        else:
+            targets, opener = unix_paths(env, isdir), connect or _unix_connect
         last = None
-        for i in range(10):
+        for t in targets:
             try:
-                f = open(path % i, "r+b", buffering=0)
+                f = opener(t)
             except OSError as e:
                 last = e
                 continue
