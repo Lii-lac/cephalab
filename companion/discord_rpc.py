@@ -5,9 +5,10 @@ the card changed, the newest state wins, and it is cleared on stop and when the 
 not an error: it reconnects quietly (back off to 30 s). Nothing here raises into the caller.
 
 state (every key optional; what isn't known is left off the card, never guessed):
-    place     "splatsville" | "alterna" | "grizzco" | "lobby"
+    place     "splatsville" | "alterna" | "grizzco" | "lobby" | "matchroom" | "order" | "shop" | "recon" | "match"
+              ("match" with no mode: in a match whose type is unknown; the rule is the details, the stage name the image text)
     mode      "anarchy" | "turf" | "xbattle" | "private" | "challenge" | "salmon"
-    rule      "Pnt" style code or the English name ("Tower Control")
+    rule      "Pnt" style code or the English name ("Tower Control")      kind  "series" | "open" (anarchy)
     stage     the stage's __RowId (VersusSceneInfo.json; CoopSceneInfo.json for salmon)
     weapon    WeaponInfoMain.json __RowId           grade "S+" with rank 4 -> "S+4"       xpower 2140
     party     [n, max]      salmometer 0-5          since / session  unix seconds (Presence fills them in)
@@ -33,8 +34,12 @@ LEVELS = ("off", "basic", "full")
 SQUIDS = ("blue", "cyan", "orange", "purple", "red", "yellow")
 MODES = ("anarchy", "turf", "xbattle", "private", "challenge", "salmon")
 SOLO = ("xbattle", "challenge")                    # solo queues: no party line
-PLACES = {"splatsville": "In Splatsville", "alterna": "In Alterna", "grizzco": "At Grizzco", "lobby": "In the Lobby"}
-PLACE_SHORT = {"splatsville": "Splatsville", "alterna": "Alterna", "grizzco": "Grizzco", "lobby": "Lobby"}
+PLACES = {"splatsville": "In Splatsville", "alterna": "In Alterna", "grizzco": "At Grizzco", "lobby": "In the Lobby",
+          "matchroom": "In a battle room", "order": "In the Order Sector", "shop": "Shopping", "recon": "Recon",
+          "match": "In a match"}
+PLACE_SHORT = {"splatsville": "Splatsville", "alterna": "Alterna", "grizzco": "Grizzco", "lobby": "Lobby",
+               "matchroom": "Lobby", "order": "Order Sector", "shop": "Splatsville", "recon": "Recon", "match": "Splatoon 3"}
+KINDS = {"series": "Series", "open": "Open"}
 MODE_NAMES = {"anarchy": "Anarchy Battle", "turf": "Turf War", "xbattle": "X Battle", "private": "Private Battle",
               "challenge": "Challenge", "salmon": "Salmon Run"}
 OP_HANDSHAKE, OP_FRAME, OP_CLOSE, OP_PING, OP_PONG = 0, 1, 2, 3, 4
@@ -141,6 +146,8 @@ def card(state: dict, level: str, rng) -> dict | None:
     if mode:
         name = _rule_name(state.get("rule")) if mode in ("anarchy", "xbattle", "private", "challenge") else ""
         name = name or MODE_NAMES[mode]
+        if mode == "anarchy" and state.get("kind") in KINDS:
+            name = f"{name} ({KINDS[state['kind']]})"
         extra = ""
         if mode == "anarchy" and isinstance(state.get("grade"), str) and state["grade"]:
             r = _num(state.get("rank"))
@@ -150,6 +157,8 @@ def card(state: dict, level: str, rng) -> dict | None:
         elif mode == "salmon" and _num(state.get("rank")) is not None:
             extra = f"EVP {int(state['rank'])}"
         act["details"] = f"{name} · {extra}" if extra else name
+    elif place == "match":
+        act["details"] = _rule_name(state.get("rule")) or PLACES[place]
     elif place:
         act["details"] = PLACES[place]
 
@@ -164,6 +173,8 @@ def card(state: dict, level: str, rng) -> dict | None:
     else:
         assets["large_image"] = basic["assets"]["large_image"]
         assets["large_text"] = PLACE_SHORT[place] if place and not mode else "Splatoon 3"
+        if place == "match" and not mode and _stage_name(state):
+            assets["large_text"] = _stage_name(state)
 
     # small image: the Salmometer in Salmon Run, the weapon in battle (or when we don't know where you are)
     wp, sm = state.get("weapon"), state.get("salmometer")
@@ -265,6 +276,7 @@ class Presence:
         self._retry_at = 0.0
         self._key = None                            # (place, mode): the card's look; a new one rerolls squid + timer
         self._squid, self._since = None, None
+        self._stage = None
         self._session = wall()
         self.sends = 0
 
@@ -281,7 +293,8 @@ class Presence:
             clog.get().exception("Discord state feed failed")
             st = {}
         key = (st.get("place"), st.get("mode"))
-        if key != self._key or self._squid is None:
+        if key != self._key or self._squid is None or st.get("stage") != self._stage:
+            self._stage = st.get("stage")                          # a new place or stage restarts the timer
             self._key, self._squid, self._since = key, self.rng.choice(SQUIDS), self.wall()
         st.setdefault("squid", self._squid)
         st.setdefault("since", self._since if key != (None, None) else self._session)
@@ -358,21 +371,130 @@ class Presence:
 
 
 FRESH = 15 * 60                                    # the last SplatNet match shows this long after it ended
+CARD_PLACE = {"room": "lobby", "hub": "splatsville", "results": "match"}   # presence places -> card() places
+
+# --- the match type: no Switch read has it, so the live stage + rule are matched against the public rotation
+SCHEDULES_URL = "https://splatoon3.ink/data/schedules.json"
+SCHEDULES_EVERY = 2 * 3600                         # at most one fetch per 2 h (a failed one counts)
+SN_RULES = {"TURF_WAR": "Pnt", "TRI_COLOR": "Tcl", "AREA": "Var", "LOFT": "Vlf", "GOAL": "Vgl", "CLAM": "Vcl"}
+
+
+def _fetch_schedules() -> dict:
+    import urllib.request
+    req = urllib.request.Request(SCHEDULES_URL, headers={"User-Agent": "Cephalab"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _iso(t) -> float | None:
+    import datetime
+    try:
+        return datetime.datetime.fromisoformat(str(t).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+class Schedules:
+    """splatoon3.ink's schedules.json, cached in cache/schedules.json (path), fetched at most once per SCHEDULES_EVERY.
+    Network errors are silent: the type is just left off."""
+
+    def __init__(self, path=None, fetch=None):
+        self.path, self.fetch = path, fetch or _fetch_schedules
+        self._data, self._tried = None, float("-inf")
+
+    def get(self, now: float) -> dict | None:
+        if self._data is None and self.path is not None:
+            try:
+                self._data = json.loads(self.path.read_text(encoding="utf-8"))
+                self._tried = self.path.stat().st_mtime
+            except (OSError, ValueError):
+                pass
+        if now - self._tried >= SCHEDULES_EVERY:
+            self._tried = now
+            try:
+                data = self.fetch()
+                if isinstance(data, dict):
+                    self._data = data
+                    if self.path is not None:
+                        self.path.parent.mkdir(parents=True, exist_ok=True)
+                        self.path.write_text(json.dumps(data), encoding="utf-8")
+            except Exception:
+                pass
+        return self._data
+
+    def match_type(self, now: float, stage_name: str, rule: str | None) -> tuple[str, str | None] | None:
+        """(mode, kind) of the current rotation that has this stage + rule: ("turf", None), ("anarchy", "series" | "open"),
+        ("xbattle", None); Turf outside a Splatfest is Regular; None when nothing matches."""
+        data = (self.get(now) or {}).get("data") or {}
+        fest_on = False
+        groups = (("festSchedules", "festMatchSettings", "turf"), ("regularSchedules", "regularMatchSetting", "turf"),
+                  ("bankaraSchedules", "bankaraMatchSettings", "anarchy"), ("xSchedules", "xMatchSetting", "xbattle"))
+        for sched, field, mode in groups:
+            for node in (data.get(sched) or {}).get("nodes") or []:
+                a, b = _iso(node.get("startTime")), _iso(node.get("endTime"))
+                if a is None or b is None or not a <= now < b:
+                    continue
+                sets = node.get(field)
+                sets = sets if isinstance(sets, list) else [sets] if isinstance(sets, dict) else []
+                if sched == "festSchedules" and sets:
+                    fest_on = True
+                for ms in sets:
+                    if not isinstance(ms, dict) or SN_RULES.get((ms.get("vsRule") or {}).get("rule")) != rule:
+                        continue
+                    if any(isinstance(v, dict) and v.get("name") == stage_name for v in ms.get("vsStages") or []):
+                        kind = {"CHALLENGE": "series", "OPEN": "open"}.get(ms.get("bankaraMode")) if mode == "anarchy" else None
+                        return mode, kind
+        if rule == "Pnt" and not fest_on:
+            return "turf", None
+        return None
+
+
+schedules: Schedules | None = None
+
+
+def _schedules(hub) -> Schedules:
+    global schedules
+    if schedules is None:
+        d = getattr(hub, "dir", None)
+        schedules = Schedules(d.parent / "cache" / "schedules.json" if d is not None else None)
+    return schedules
 
 
 def from_hub(hub, now=None) -> dict:
-    """The adapter: what the Discord card can use from what the hub knows. The weapon is live (Switch); mode, rule,
-    stage and rank are the last match SplatNet reported (hub.last_match), shown while it ended under FRESH ago, on the
-    bet he's still playing the same thing; place, party and Salmometer arrive later from new Switch reads."""
+    """The adapter: what the Discord card can use from what the hub knows. With the Switch connected (botbase ok and its
+    snapshot has a place: s3seed/presence.py) everything is live: place, stage, rule, party, anarchy grade, and the match
+    type from the public rotation. Else mode, rule, stage and rank are the last match SplatNet reported (hub.last_match),
+    shown while it ended under FRESH ago, on the bet he's still playing the same thing. The weapon is live either way."""
     st: dict = {}
+    now = time.time() if now is None else now
     snap = hub.snapshots.get("botbase") or {}
-    if (hub.status.get("botbase") or {}).get("state") == "ok" and snap.get("weapon") is not None:
+    ok = (hub.status.get("botbase") or {}).get("state") == "ok"
+    if ok and snap.get("weapon") is not None:
         row = weapon_row(snap["weapon"])
         if row:
             st["weapon"] = row
+    if ok and isinstance(snap.get("place"), str) and snap["place"]:
+        p = snap["place"]
+        st["place"] = CARD_PLACE.get(p, p)
+        if st["place"] == "match" and isinstance(snap.get("stage"), str):
+            st["stage"] = snap["stage"]
+            if isinstance(snap.get("rule"), str):
+                st["rule"] = snap["rule"]
+            t = _schedules(hub).match_type(now, _stage_name({"stage": snap["stage"]}), st.get("rule"))
+            if t:
+                st["mode"] = t[0]
+                if t[1]:
+                    st["kind"] = t[1]
+                rank = snap.get("rank")
+                if t[0] == "anarchy" and isinstance(rank, dict) and rank.get("grade"):
+                    st["grade"] = rank["grade"]
+        pt, mx = snap.get("party"), snap.get("partyMax")
+        if isinstance(pt, int) and isinstance(mx, int):
+            st["party"] = [pt, mx]
+        return st
     m = getattr(hub, "last_match", None)
     if isinstance(m, dict) and _num(m.get("ended")) is not None and m.get("mode") in MODES \
-            and (time.time() if now is None else now) - m["ended"] < FRESH:
+            and now - m["ended"] < FRESH:
         st["mode"] = m["mode"]
         for k in ("rule", "stage"):
             if m.get(k):
