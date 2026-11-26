@@ -795,5 +795,22 @@ class GameUpdate(unittest.TestCase):
             tr.stop()
 
 
+class RootDir(unittest.TestCase):
+    def test_frozen_mac_uses_application_support_and_windows_the_exe_folder(self):
+        import sys
+        from unittest import mock
+        from companion.app import root_dir
+        with tempfile.TemporaryDirectory() as d:
+            home, exe = Path(d) / "home", Path(d) / "dist" / "cephalab.exe"
+            with mock.patch.object(sys, "frozen", True, create=True), mock.patch.object(sys, "executable", str(exe)), \
+                    mock.patch.object(Path, "home", return_value=home):
+                with mock.patch.object(sys, "platform", "darwin"):
+                    got = root_dir()
+                self.assertEqual(got, home / "Library" / "Application Support" / "Cephalab")
+                self.assertTrue(got.is_dir())
+                with mock.patch.object(sys, "platform", "win32"):
+                    self.assertEqual(root_dir(), exe.resolve().parent)
+
+
 if __name__ == "__main__":
     unittest.main()
