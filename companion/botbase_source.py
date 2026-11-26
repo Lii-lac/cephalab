@@ -25,6 +25,7 @@ NO_HOST = "No Switch address set"
 FULL_EVERY = 600.0
 STOCK_CARRY = 600.0     # how long counts read on this connection stand in while the tables are looked for again
 FIND_RETRY = 30.0        # seconds after a find came up empty before a worn-gear read starts another
+AUTO_FIND_RETRY = 120.0  # the same for the find the poll loop starts by itself (after a game restart moved the outfit)
 IO_WAIT = 20.0          # how long a worn-gear read waits for a poll in progress (one connection serves both)
 # A map-rotation reload moves the save in RAM; a search (thousands of peeks, each pausing the game) then froze the game on
 # that loading screen and crashed it on close (2026-11-22, only with the companion on). So searches wait until the game
@@ -328,16 +329,29 @@ class BotbaseSource:
         finally:
             self._io.release()
         if ids is None:
-            with self._lock:
-                last = self._find or {}
-                failed = last.get("state") in ("none", "ambiguous", "error") and time.time() - last.get("endedAt", 0) < FIND_RETRY
-            if failed:
+            if self._find_failed(FIND_RETRY):
                 raise Unavailable("Couldn't find your outfit in the Switch's memory")
             if not self.settled():
                 raise Unavailable("Waiting for the game to settle", busy=True)
             self.equip_find()
             raise Unavailable("Looking for your outfit again")
         return ids
+
+    def _find_failed(self, window: float) -> bool:
+        with self._lock:
+            last = self._find or {}
+            return last.get("state") in ("none", "ambiguous", "error") and time.time() - last.get("endedAt", 0) < window
+
+    def _auto_find(self):
+        """After a poll (outside the lock): the outfit wasn't where it was (a game restart moves it), so start the find by
+        itself, the way GET /api/wearing does, so the Discord card gets the weapon back with no page open. Only once the save
+        sits still (settled, every stock table read where it was), never right after a miss, at most every AUTO_FIND_RETRY."""
+        if self._worn_ok or not self.settled() or self._hit != set(S.KINDS) or self._find_failed(AUTO_FIND_RETRY):
+            return
+        try:
+            self.equip_find()
+        except Unavailable:
+            pass
 
     def equip_find(self) -> bool:
         """Start looking for the worn-gear record (by its field hashes). It runs on a thread of its own, reading a slice at
@@ -422,6 +436,7 @@ class BotbaseSource:
                     self._connect()
                 with self._io:
                     self.poll_once()
+                self._auto_find()
                 backoff = 2
                 self._between(stop)
             except NoGame as e:
