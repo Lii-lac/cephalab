@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.3 (2026-11-26)
+
+- When you're done playing, the Discord card goes away. With a CFW Switch, it clears as soon as you close Splatoon 3.
+- Without CFW (or with the Switch asleep), the card shows only while SplatNet has a recent match: about 5 minutes after your last battle, or 10 after your last Salmon Run shift started. Your first game of a session shows up once it ends.
+
 ## v0.2.2 (2026-11-26)
 
 - After you restart Splatoon 3, Cephalab finds your outfit again by itself once the game settles, so your weapon comes back on the Discord card without opening Cephalab.
