@@ -424,7 +424,7 @@ class Schedules:
 
     def match_type(self, now: float, stage_name: str, rule: str | None) -> tuple[str, str | None] | None:
         """(mode, kind) of the current rotation that has this stage + rule: ("turf", None), ("anarchy", "series" | "open"),
-        ("xbattle", None); Turf outside a Splatfest is Regular; None when nothing matches."""
+        ("xbattle", None), ("challenge", None); Turf outside a Splatfest is Regular; None when nothing matches."""
         data = (self.get(now) or {}).get("data") or {}
         fest_on = False
         groups = (("festSchedules", "festMatchSettings", "turf"), ("regularSchedules", "regularMatchSetting", "turf"),
@@ -444,6 +444,16 @@ class Schedules:
                     if any(isinstance(v, dict) and v.get("name") == stage_name for v in ms.get("vsStages") or []):
                         kind = {"CHALLENGE": "series", "OPEN": "open"}.get(ms.get("bankaraMode")) if mode == "anarchy" else None
                         return mode, kind
+        for node in (data.get("eventSchedules") or {}).get("nodes") or []:   # Challenge: periods inside the node
+            ms = node.get("leagueMatchSetting") or {}
+            if SN_RULES.get((ms.get("vsRule") or {}).get("rule")) != rule:
+                continue
+            if not any(isinstance(v, dict) and v.get("name") == stage_name for v in ms.get("vsStages") or []):
+                continue
+            for p in node.get("timePeriods") or []:
+                a, b = _iso(p.get("startTime")), _iso(p.get("endTime"))
+                if a is not None and b is not None and a <= now < b:
+                    return "challenge", None
         if rule == "Pnt" and not fest_on:
             return "turf", None
         return None
