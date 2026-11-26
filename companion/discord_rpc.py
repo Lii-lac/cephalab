@@ -422,7 +422,7 @@ class Schedules:
                 pass
         return self._data
 
-    def match_type(self, now: float, stage_name: str, rule: str | None) -> tuple[str, str | None] | None:
+    def match_type(self, now: float, stage_name: str, rule: str | None, x_ok: bool = True) -> tuple[str, str | None] | None:
         """(mode, kind) of the current rotation that has this stage + rule: ("turf", None), ("anarchy", "series" | "open"),
         ("xbattle", None), ("challenge", None); Turf outside a Splatfest is Regular; None when nothing matches."""
         data = (self.get(now) or {}).get("data") or {}
@@ -430,6 +430,8 @@ class Schedules:
         groups = (("festSchedules", "festMatchSettings", "turf"), ("regularSchedules", "regularMatchSetting", "turf"),
                   ("bankaraSchedules", "bankaraMatchSettings", "anarchy"), ("xSchedules", "xMatchSetting", "xbattle"))
         for sched, field, mode in groups:
+            if mode == "xbattle" and not x_ok:          # X Battle needs S+: skip it below S+ (the same stage + rule can be in X too)
+                continue
             for node in (data.get(sched) or {}).get("nodes") or []:
                 a, b = _iso(node.get("startTime")), _iso(node.get("endTime"))
                 if a is None or b is None or not a <= now < b:
@@ -490,12 +492,13 @@ def from_hub(hub, now=None) -> dict:
             st["stage"] = snap["stage"]
             if isinstance(snap.get("rule"), str):
                 st["rule"] = snap["rule"]
-            t = _schedules(hub).match_type(now, _stage_name({"stage": snap["stage"]}), st.get("rule"))
+            rank = snap.get("rank")
+            x_ok = not (isinstance(rank, dict) and rank.get("grade") and not str(rank["grade"]).startswith("S+"))
+            t = _schedules(hub).match_type(now, _stage_name({"stage": snap["stage"]}), st.get("rule"), x_ok)
             if t:
                 st["mode"] = t[0]
                 if t[1]:
                     st["kind"] = t[1]
-                rank = snap.get("rank")
                 if t[0] == "anarchy" and isinstance(rank, dict) and rank.get("grade"):
                     st["grade"] = rank["grade"]
         pt, mx = snap.get("party"), snap.get("partyMax")
