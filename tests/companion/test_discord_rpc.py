@@ -206,6 +206,36 @@ class Adapter(unittest.TestCase):
         Hub.status = {"botbase": {"state": "error"}}
         self.assertEqual(D.from_hub(Hub), {})
 
+    def test_last_splatnet_match_while_fresh_only(self):
+        import base64
+        from companion import splatnet
+        b64 = lambda s: base64.b64encode(s.encode()).decode()
+        group = lambda key, node, first="historyGroups": {"data": {key: {first: {"nodes": [{"historyDetails": {"nodes": [node]}}]}}}}
+        bid = b64("VsHistoryDetail-u-abc:RECENT:20261122T150501_0000")
+        replies = {                                        # the real shapes: the latest-history node is only id + player
+            "LatestBattleHistoriesQuery": group("latestBattleHistories", {"id": bid, "player": {}}, "historyGroupsOnlyFirst"),
+            "VsHistoryDetailQuery": {"data": {"vsHistoryDetail": {
+                "id": bid, "vsMode": {"mode": "BANKARA"}, "vsRule": {"rule": "GOAL", "name": "Rainmaker"},
+                "vsStage": {"id": "VnNTdGFnZS01", "name": "Um'ami Ruins"}, "playedTime": "2026-11-22T15:05:01Z",
+                "duration": 193, "bankaraMatch": {"mode": "CHALLENGE"}, "xMatch": None, "leagueMatch": None}}},
+            "BankaraBattleHistoriesQuery": group("bankaraBattleHistories", {"id": bid, "udemae": "B+"}),
+            "CoopHistoryQuery": group("coopResult", {      # no playedTime: the time is in the id; older than the battle
+                "id": b64("CoopHistoryDetail-u-abc:20261122T140000_0000"), "coopStage": {"id": "Q29vcFN0YWdlLTQ=",
+                "name": "Salmonid Smokeyard"}, "afterGrade": {"name": "Eggsecutive VP"}, "afterGradePoint": 60}),
+        }
+        asked = []
+        class Hub:
+            snapshots, status, dir = {}, {}, None
+        src = splatnet.SplatnetSource(Hub, vault=object())
+        src._query = lambda name, *a, **k: asked.append(name) or replies[name]
+        src._update_match(replies["LatestBattleHistoriesQuery"])
+        src._update_match(replies["LatestBattleHistoriesQuery"])   # same battle again: no second detail query
+        self.assertEqual(asked.count("VsHistoryDetailQuery"), 1)
+        played = 1795359901                                # 2026-11-22T15:05:01Z
+        self.assertEqual(D.from_hub(Hub, now=played + 193 + 60), {"mode": "anarchy", "rule": "Vgl", "stage": "Vss_Factory00",
+                                                                  "grade": "B+", "since": played})
+        self.assertEqual(D.from_hub(Hub, now=played + 193 + D.FRESH + 1), {})
+
 
 class Setting(unittest.TestCase):
     def test_level_validated_and_saved(self):
