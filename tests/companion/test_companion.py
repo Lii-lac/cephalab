@@ -820,7 +820,7 @@ class Presence(unittest.TestCase):
                          {3448801241: "Scorch Gorge", 3091052709: "Mincemeat Metalworks", 2212797925: "Eeltail Alley",
                           3833858915: "Manta Maria", 3069060397: "shop"})
         self.assertEqual(PR.place(70, 3091052709), "match")
-        self.assertIsNone(PR.place(70, 885812243))              # the battle lobby's key in an unknown scene: keep the place
+        self.assertEqual(PR.place(9, 885812243), "lobby")        # the Challenge lobby (scene 9) has the battle lobby's key
 
     def test_party_rule(self):
         from s3seed.presence import Party
