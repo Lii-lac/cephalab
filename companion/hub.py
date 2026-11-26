@@ -20,6 +20,9 @@ from pathlib import Path
 
 SOURCES = ("botbase", "s3s", "file")
 LIVE = ("stock", "drink", "wearing", "weapon", "xpGainMax", "player")   # snapshot keys besides the pieces whose change counts (and is logged)
+# botbase's live presence for the Discord card (s3seed/presence.py): kept current in the snapshot (presence(), and carried
+# by publish) but never a change of its own: not logged, not streamed, so a lobby wait doesn't flood log.jsonl
+PRESENCE = ("place", "stage", "rule", "party", "partyMax", "rank", "salmon", "capsules")
 
 
 def _same(a: dict | None, b: dict) -> bool:
@@ -118,7 +121,8 @@ class Hub:
         with self.lock:
             old = self.snapshots.get(src)
             if _same(old, snap):
-                self.snapshots[src] = {**old, "seenAt": snap["at"]}   # replaced, never mutated: readers may be
+                keep = {k: v for k, v in old.items() if k not in PRESENCE}
+                self.snapshots[src] = {**keep, **{k: snap[k] for k in PRESENCE if k in snap}, "seenAt": snap["at"]}   # replaced, never mutated: readers may be
                 return False                                         # serialising the old one right now
             line = _delta(self.snapshots.get(src), snap)
             self.snapshots[src] = snap
@@ -129,6 +133,14 @@ class Hub:
             tmp.replace(self.dir / f"last_{src}.json")
         self.emit("snapshot", snap)
         return True
+
+    def presence(self, source: str, values: dict):
+        """The source's live presence values (PRESENCE keys) into its latest snapshot, without logging or streaming."""
+        with self.lock:
+            old = self.snapshots.get(source)
+            if old is not None:
+                self.snapshots[source] = {**{k: v for k, v in old.items() if k not in PRESENCE},
+                                          **{k: v for k, v in values.items() if k in PRESENCE}}
 
     def set_status(self, source: str, state: str, message: str = "", **extra):
         """state: off | starting | connecting | waiting | ok | error | login-needed."""
