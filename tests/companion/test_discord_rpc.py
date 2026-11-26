@@ -288,6 +288,11 @@ class Adapter(unittest.TestCase):
             D.schedules = old
         Hub.status = {"botbase": {"state": "error"}}             # Switch gone: back to SplatNet's last match
         self.assertEqual(D.from_hub(Hub, now=played + 193 + 60)["stage"], "Vss_Factory00")
+        Hub.status = {"botbase": {"state": "waiting"}}           # Switch up, game closed: no card at all
+        st = D.from_hub(Hub, now=played + 193 + 60)
+        self.assertEqual(st, {"closed": True})
+        self.assertIsNone(D.card(st, "full", None))
+        self.assertIsNone(D.card(st, "basic", None))
 
 
 class Setting(unittest.TestCase):
