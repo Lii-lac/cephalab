@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 SOURCES = ("botbase", "s3s", "file")
-LIVE = ("stock", "drink", "wearing", "xpGainMax", "player")   # snapshot keys besides the pieces whose change counts (and is logged)
+LIVE = ("stock", "drink", "wearing", "weapon", "xpGainMax", "player")   # snapshot keys besides the pieces whose change counts (and is logged)
 
 
 def _same(a: dict | None, b: dict) -> bool:
