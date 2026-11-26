@@ -49,6 +49,14 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 dist\cephalab.exe).Hash.ToLower()
           "$hash  cephalab.exe" | Set-Content -Encoding ascii dist\SHA256SUMS.txt
 
+      - name: Self-test cephalab.exe
+        timeout-minutes: 3
+        shell: pwsh
+        run: |
+          # a --windowed exe: pwsh wouldn't wait for it or see its exit code without Start-Process -Wait
+          $p = Start-Process -FilePath dist\cephalab.exe -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "cephalab.exe --selftest exited $($p.ExitCode)" }
+
       - name: Upload release assets
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -62,3 +70,64 @@ jobs:
           } else {
             gh release upload $tag dist\cephalab.exe dist\SHA256SUMS.txt --clobber
           }
+
+  build-macos:
+    runs-on: macos-latest
+    needs: build-windows          # the Windows job creates the release; this one only adds to it
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build web app
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set up Python companion and s3s
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install -q --upgrade pip pyinstaller
+          .venv/bin/python tools/setup_s3s.py
+
+      - name: Run companion unit tests
+        run: .venv/bin/python -m unittest tests.companion.test_companion
+
+      - name: Build Cephalab.app
+        run: .venv/bin/python tools/build_exe.py
+
+      - name: Sign (ad hoc) and verify
+        run: |
+          codesign --force --deep -s - dist/Cephalab.app
+          codesign --verify --deep --strict dist/Cephalab.app
+
+      - name: Self-test Cephalab.app
+        timeout-minutes: 3
+        run: dist/Cephalab.app/Contents/MacOS/Cephalab --selftest
+
+      - name: Zip and hash
+        run: |
+          ditto -c -k --keepParent dist/Cephalab.app dist/Cephalab-macOS-arm64.zip
+          cd dist && shasum -a 256 Cephalab-macOS-arm64.zip > SHA256SUMS-macos.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cephalab-macOS-arm64
+          path: |
+            dist/Cephalab-macOS-arm64.zip
+            dist/SHA256SUMS-macos.txt
+
+      - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" dist/Cephalab-macOS-arm64.zip dist/SHA256SUMS-macos.txt --clobber
