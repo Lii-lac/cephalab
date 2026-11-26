@@ -422,7 +422,9 @@ class Presence:
         self._drop()
 
 
-FRESH = 15 * 60                                    # the last SplatNet match shows this long after it ended
+FRESH = 5 * 60 + 90                                # without a live Switch the card lasts this long after a battle ended:
+                                                   # about one more game, plus SplatNet's 90 s check; then it goes away
+FRESH_SALMON = 10 * 60 + 90                        # a Salmon Run job's time is when it started, and a shift runs ~5 min
 CARD_PLACE = {"room": "lobby", "hub": "splatsville", "results": "match"}   # presence places -> card() places
 
 # --- the match type: no Switch read has it, so the live stage + rule are matched against the public rotation
@@ -528,7 +530,8 @@ def from_hub(hub, now=None) -> dict:
     """The adapter: what the Discord card can use from what the hub knows. With the Switch connected (botbase ok and its
     snapshot has a place: s3seed/presence.py) everything is live: place, stage, rule, party, anarchy grade, and the match
     type from the public rotation. Else mode, rule, stage and rank are the last match SplatNet reported (hub.last_match),
-    shown while it ended under FRESH ago, on the bet he's still playing the same thing. The weapon is live either way."""
+    shown while it ended under FRESH ago, on the bet he's still playing the same thing. Past that, or with nothing known
+    at all, there is no card ({"closed": True}): there is no telling he's still playing. The weapon is live either way."""
     st: dict = {}
     now = time.time() if now is None else now
     snap = hub.snapshots.get("botbase") or {}
@@ -563,20 +566,21 @@ def from_hub(hub, now=None) -> dict:
     if ok and snap.get("seenAt") is not None and "rule" in snap:
         return st                      # the Switch is live but the place isn't known yet: don't fall back to an old match
     m = getattr(hub, "last_match", None)
-    if isinstance(m, dict) and _num(m.get("ended")) is not None and m.get("mode") in MODES \
-            and now - m["ended"] < FRESH:
-        st["mode"] = m["mode"]
-        for k in ("rule", "stage"):
-            if m.get(k):
-                st[k] = m[k]
-        if m["mode"] == "anarchy" and m.get("grade"):
-            st["grade"] = m["grade"]
-            if _num(m.get("rank")) is not None:
-                st["rank"] = m["rank"]
-        elif m["mode"] == "xbattle" and _num(m.get("xpower")) is not None:
-            st["xpower"] = m["xpower"]
-        elif m["mode"] == "salmon" and _num(m.get("rank")) is not None:
+    if not (isinstance(m, dict) and _num(m.get("ended")) is not None and m.get("mode") in MODES
+            and now - m["ended"] < (FRESH_SALMON if m["mode"] == "salmon" else FRESH)):
+        return st if ok else {"closed": True}   # Splatoon 3 is running on a live Switch; else no recent match: done, no card
+    st["mode"] = m["mode"]
+    for k in ("rule", "stage"):
+        if m.get(k):
+            st[k] = m[k]
+    if m["mode"] == "anarchy" and m.get("grade"):
+        st["grade"] = m["grade"]
+        if _num(m.get("rank")) is not None:
             st["rank"] = m["rank"]
-        if _num(m.get("started_streak")) is not None:
-            st["since"] = m["started_streak"]
+    elif m["mode"] == "xbattle" and _num(m.get("xpower")) is not None:
+        st["xpower"] = m["xpower"]
+    elif m["mode"] == "salmon" and _num(m.get("rank")) is not None:
+        st["rank"] = m["rank"]
+    if _num(m.get("started_streak")) is not None:
+        st["since"] = m["started_streak"]
     return st
