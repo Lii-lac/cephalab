@@ -82,6 +82,44 @@ class Frames(unittest.TestCase):
             D.decode(io.BytesIO(D.encode(1, {"a": 1})[:-2]).read)
 
 
+class UnixTransport(unittest.TestCase):
+    def test_search_order_env_then_tmp_first_that_connects(self):
+        tried = []
+
+        class Sock:
+            def __init__(self):
+                self.buf = io.BytesIO(D.encode(D.OP_FRAME, {"evt": "READY"}))
+                self.sent = b""
+
+            def write(self, b):
+                self.sent += b
+
+            def read(self, n):
+                return self.buf.read(n)
+
+            def close(self):
+                pass
+
+        def connect(path):
+            tried.append(path)
+            if path.endswith("-2"):
+                return Sock()
+            raise OSError("refused")
+
+        dirs = {"/run/user/501", "/var/folders/x/T/", "/tmp"}
+        env = {"XDG_RUNTIME_DIR": "/nope", "TMPDIR": "/var/folders/x/T/", "TMP": "/tmp"}
+        p = D.Pipe.open("123", connect=connect, env=env, isdir=dirs.__contains__)
+        self.assertEqual(tried, [f"/var/folders/x/T/discord-ipc-{i}" for i in range(3)])
+        self.assertEqual(D.decode(io.BytesIO(p.f.sent).read), (D.OP_HANDSHAKE, {"v": 1, "client_id": "123"}))
+        self.assertEqual(D.unix_paths({"XDG_RUNTIME_DIR": "/run/user/501"}, dirs.__contains__)[0], "/run/user/501/discord-ipc-0")
+        self.assertEqual(D.unix_paths({"TEMP": "/gone"}, dirs.__contains__)[9], "/tmp/discord-ipc-9")
+        self.assertEqual(D.unix_paths({}, lambda d: False), [])
+        tried.clear()
+        with self.assertRaises(OSError):
+            D.Pipe.open("123", connect=connect, env={}, isdir=lambda d: False)
+        self.assertEqual(tried, [])
+
+
 class FakePipe:
     def __init__(self, log):
         self.log = log
