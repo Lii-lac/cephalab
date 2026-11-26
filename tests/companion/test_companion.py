@@ -696,6 +696,67 @@ class GameUpdate(unittest.TestCase):
         uf = Updater(current="0.8.0", fetch=lambda url, t=10: (200, rel), is_frozen=True)
         self.assertEqual(uf.check()["canInstall"], sys.platform == "win32")
 
+        # macOS: the zip asset and SHA256SUMS-macos.txt (over SHA256SUMS.txt); installable only when the .app's folder is writable
+        from companion import updater as U
+        relm = json.dumps({
+            "tag_name": "v0.9.0",
+            "assets": [{"name": n, "browser_download_url": f"https://example.test/{n}"} for n in
+                       ("cephalab.exe", "SHA256SUMS.txt", "Cephalab-macOS-arm64.zip", "SHA256SUMS-macos.txt")],
+        }).encode()
+        with tempfile.TemporaryDirectory() as d:
+            exe = Path(d) / "Apps" / "Cephalab.app" / "Contents" / "MacOS" / "cephalab"
+            exe.parent.mkdir(parents=True)
+            um = Updater(current="0.8.0", fetch=lambda url, t=10: (200, relm), is_frozen=True, platform="darwin", executable=str(exe))
+            self.assertTrue(um.check()["canInstall"])
+            self.assertEqual((um._asset_url, um._sha_url), ("https://example.test/Cephalab-macOS-arm64.zip", "https://example.test/SHA256SUMS-macos.txt"))
+            self.assertEqual(U.app_bundle(exe), Path(d).absolute() / "Apps" / "Cephalab.app")
+            gone = Path(d) / "missing" / "Cephalab.app" / "Contents" / "MacOS" / "cephalab"
+            self.assertFalse(Updater(current="0.8.0", fetch=lambda url, t=10: (200, relm), is_frozen=True, platform="darwin",
+                                     executable=str(gone)).check()["canInstall"])          # parent folder not writable (absent)
+            self.assertFalse(Updater(current="0.8.0", fetch=lambda url, t=10: (200, relm), is_frozen=True, platform="darwin",
+                                     executable=str(Path(d) / "cephalab")).check()["canInstall"])   # not inside a .app
+            self.assertFalse(Updater(current="0.8.0", fetch=lambda url, t=10: (200, relm), is_frozen=False, platform="darwin",
+                                     executable=str(exe)).check()["canInstall"])
+            old = json.loads(relm)
+            old["assets"] = [a for a in old["assets"] if a["name"] != "SHA256SUMS-macos.txt"]
+            uo = Updater(current="0.8.0", fetch=lambda url, t=10: (200, json.dumps(old).encode()), is_frozen=True, platform="darwin", executable=str(exe))
+            uo.check()
+            self.assertEqual(uo._sha_url, "https://example.test/SHA256SUMS.txt")
+            uw = Updater(current="0.8.0", fetch=lambda url, t=10: (200, relm), is_frozen=True, platform="win32", executable=str(exe))
+            uw.check()
+            self.assertEqual((uw._asset_url, uw._sha_url), ("https://example.test/cephalab.exe", "https://example.test/SHA256SUMS.txt"))
+
+            # zip: unix modes come back (exec bits; checked off Windows), paths out of the folder are refused
+            import io, os, stat, zipfile
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as z:
+                zi = zipfile.ZipInfo("Cephalab.app/Contents/MacOS/cephalab")
+                zi.external_attr = (stat.S_IFREG | 0o755) << 16
+                z.writestr(zi, b"bin")
+                z.writestr("Cephalab.app/Contents/Info.plist", b"plist")
+            U.unzip_keeping_modes(buf.getvalue(), Path(d) / "x")
+            got = Path(d) / "x" / "Cephalab.app" / "Contents" / "MacOS" / "cephalab"
+            self.assertEqual(got.read_bytes(), b"bin")
+            if os.name != "nt":
+                self.assertEqual(stat.S_IMODE(got.stat().st_mode), 0o755)
+            bad = io.BytesIO()
+            with zipfile.ZipFile(bad, "w") as z:
+                z.writestr("../evil", b"x")
+            with self.assertRaises(RuntimeError):
+                U.unzip_keeping_modes(bad.getvalue(), Path(d) / "y")
+
+        # the swap script quotes every path
+        from pathlib import PurePosixPath as P
+        sh = U.mac_swap_script(P("/Applications/My Apps/Cephalab.app"), P("/tmp/it's new/Cephalab.app"), 4242, P("/tmp/it's new"))
+        self.assertIn("kill -0 4242", sh)
+        app, aside, new = "'/Applications/My Apps/Cephalab.app'", "'/Applications/My Apps/Cephalab.app.old-4242'", "'/tmp/it'\"'\"'s new/Cephalab.app'"
+        steps = [f"if mv {app} {aside}; then", f"if mv {new} {app}; then rm -rf {aside}; else mv {aside} {app}; fi", f"open -n {app}"]
+        at = [sh.find(s) for s in steps]
+        self.assertTrue(all(i >= 0 for i in at) and at == sorted(at), sh)      # aside, new in, drop aside (or restore), reopen
+        self.assertNotIn(f"rm -rf {app}\n", sh)
+        self.assertIn("xattr -dr com.apple.quarantine '/Applications/My Apps/Cephalab.app'", sh)
+        self.assertIn("open -n '/Applications/My Apps/Cephalab.app'", sh)
+
         # Settings accepts updates.auto toggle
         with tempfile.TemporaryDirectory() as d:
             s = Settings(Path(d) / "settings.json")
