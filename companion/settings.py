@@ -3,6 +3,7 @@
     {"switch": {"host": "", "port": 6000, "every": 15}, "splatnet": {"every": "off"}}
 
 host "" = no Switch (the botbase source idles); splatnet.every: "battle" (after each battle), "5min", or "off".
+discord.level: "off", "basic" (Playing Splatoon 3 and nothing else) or "full" (the whole Rich Presence card).
 """
 import copy
 import json
@@ -10,8 +11,10 @@ import re
 import threading
 from pathlib import Path
 
-DEFAULTS = {"switch": {"host": "", "port": 6000, "every": 15}, "splatnet": {"every": "off"}, "updates": {"auto": True}}
+DEFAULTS = {"switch": {"host": "", "port": 6000, "every": 15}, "splatnet": {"every": "off"}, "updates": {"auto": True},
+            "discord": {"level": "basic"}}
 SPLATNET_MODES = ("battle", "5min", "off")
+DISCORD_LEVELS = ("off", "basic", "full")
 HOST = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?")
 
 
@@ -53,6 +56,10 @@ def _value(group: str, k: str, v):
     if group == "updates" and k == "auto":
         if not isinstance(v, bool):
             raise SettingsError("Check for updates on start must be true or false.")
+        return v
+    if group == "discord" and k == "level":
+        if v not in DISCORD_LEVELS:
+            raise SettingsError("Discord is off, basic or full.")
         return v
     if v not in SPLATNET_MODES:
         raise SettingsError("Check SplatNet is battle, 5min or off.")
