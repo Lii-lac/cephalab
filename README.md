@@ -103,6 +103,12 @@ Pick a popular build under **Weapons** or build your own in the editor, then ope
 
 **Discord.** With Discord open, Cephalab shows what you're doing on your profile. With a CFW Switch it's live: where you are (lobby, Splatsville, Grizzco, a shop...), the stage and mode in a match, your party size, and your rank. Without one, it shows your last match from SplatNet. Pick how much it shares under **Settings** (Off, Basic, Full).
 
+<p align="center">
+  <img src="docs/img/discord-member-list.png" width="48%" alt="A Discord member list showing Lilac (Alex) playing Splatoon 3, with the Rich Presence card behind the name.">
+  <img src="docs/img/discord-card-wide.png" width="45%" alt="Discord profile card: Splatoon 3, Tower Control (Series), B+, 1 of 4, with the stage in its Anarchy frame."><br>
+  <em>Shoutout <a href="https://discord.gg/NUEsports">Northwestern Esports</a>!</em>
+</p>
+
 **Privacy.** Nintendo login tokens stay in Windows Credential Manager (Keychain on a Mac) and are never saved in files. Sign-in authenticates with Nintendo through [nxapi](https://github.com/samuelthomas2774/nxapi-znca-api).
 
 **No login.** If you'd rather not sign in, you can import an `s3s --getseed` JSON file under **Settings → Data**.
