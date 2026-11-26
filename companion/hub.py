@@ -60,6 +60,7 @@ class Hub:
         self.lock = threading.Lock()
         self.snapshots: dict[str, dict] = {}
         self.status: dict[str, dict] = {}
+        self.last_match: dict | None = None    # the newest match SplatNet reported (splatnet.next_match), for the Discord card
         self.clients: list[queue.Queue] = []
         for s in SOURCES:
             p = self.dir / f"last_{s}.json"
