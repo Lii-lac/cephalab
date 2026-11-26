@@ -216,6 +216,8 @@ class BotbaseSource:
         worn = E.worn(self.bot, epath, head)                         # one small read where the outfit was (never a search)
         if worn:
             snap["wearing"] = {t: worn[t] for t in G.TYPES}
+            if worn.get("weapon") is not None:
+                snap["weapon"] = worn["weapon"]                      # for the Discord card; no new read
         drink = D.read(self.bot, dpath)                              # one small read where the drink was
         if drink is not None:
             self._drink, self._drink_at = drink, time.monotonic()
