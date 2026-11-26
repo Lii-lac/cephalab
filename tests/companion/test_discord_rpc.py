@@ -41,7 +41,7 @@ class Card(unittest.TestCase):
                 self.assertTrue(c["assets"]["small_image"].endswith("/salmometer/3.png"))
                 self.assertEqual(c["assets"]["small_text"], "Cohozuna · Salmometer 3/5")
             else:
-                self.assertTrue(c["assets"]["small_image"].endswith(f"/weapon/{W}.png"))
+                self.assertTrue(c["assets"]["small_image"].endswith(f"/weapon/{mode}/{W}.png"), mode)   # badge in the mode's color
                 self.assertEqual(c["assets"]["small_text"], "Splattershot")
 
     def test_details_line(self):
