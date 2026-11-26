@@ -3,7 +3,7 @@
 import { $, $$, api, fadeText } from "./dom";
 import { STATIC } from "../local/flag";
 
-export type Cfg = { switch: { host: string; port: number; every: number }; splatnet: { every: "battle" | "5min" | "off" }; updates?: { auto: boolean }; data: { folder: string; cacheBytes: number } };
+export type Cfg = { switch: { host: string; port: number; every: number }; splatnet: { every: "battle" | "5min" | "off" }; updates?: { auto: boolean }; discord?: { level: "off" | "basic" | "full" }; data: { folder: string; cacheBytes: number } };
 export let cfg: Cfg | null = null;
 export const offline = () => cfg === null;
 const listeners = new Set<() => void>();
