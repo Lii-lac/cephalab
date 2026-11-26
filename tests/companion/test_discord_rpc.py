@@ -241,8 +241,8 @@ class Adapter(unittest.TestCase):
         row = D.weapon_row(20)
         self.assertTrue(row)
         self.assertEqual(D.from_hub(Hub), {"weapon": row})
-        Hub.status = {"botbase": {"state": "error"}}
-        self.assertEqual(D.from_hub(Hub), {})
+        Hub.status = {"botbase": {"state": "error"}}           # Switch gone and no recent match: no card
+        self.assertEqual(D.from_hub(Hub), {"closed": True})
 
     def test_last_splatnet_match_while_fresh_only(self):
         import base64
@@ -272,7 +272,7 @@ class Adapter(unittest.TestCase):
         played = 1795359901                                # 2026-11-22T15:05:01Z
         self.assertEqual(D.from_hub(Hub, now=played + 193 + 60), {"mode": "anarchy", "rule": "Vgl", "stage": "Vss_Factory00",
                                                                   "grade": "B+", "since": played})
-        self.assertEqual(D.from_hub(Hub, now=played + 193 + D.FRESH + 1), {})
+        self.assertEqual(D.from_hub(Hub, now=played + 193 + D.FRESH + 1), {"closed": True})   # done playing: no card
         Hub.snapshots = {"botbase": {"place": "room", "party": 2, "partyMax": 4, "rule": "Vgl", "rank": {"grade": "B+", "points": 664}}}
         Hub.status = {"botbase": {"state": "ok"}}                # the Switch is live: its values win over SplatNet's match
         self.assertEqual(D.from_hub(Hub, now=played + 193 + 60), {"place": "lobby", "party": [2, 4]})
