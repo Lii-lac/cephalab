@@ -1,6 +1,7 @@
 """Build the companion as one .exe (PyInstaller) that carries the built app, the game data and s3s.
     python tools/build_exe.py        -> dist/cephalab.exe       (build web/ first: cd web && npm run build)
-The .exe keeps state/ and cache/ next to itself."""
+    on macOS                         -> dist/Cephalab.app       (onedir bundle; sign it after: codesign -s -)
+The .exe keeps state/ and cache/ next to itself; the .app keeps them in ~/Library/Application Support/Cephalab."""
 import os
 import subprocess
 import sys
@@ -10,7 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PY = ROOT / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
 sep = os.pathsep
 add = [f"{ROOT / 'data'}{sep}data", f"{ROOT / 's3s' / 'iksm.py'}{sep}s3s", f"{ROOT / 's3s' / 'utils.py'}{sep}s3s"]
-ico = ROOT / "assets" / "cephalab.ico"
+MAC = sys.platform == "darwin"
+ico = ROOT / "assets" / ("cephalab.icns" if MAC else "cephalab.ico")
 if ico.exists():
     add.append(f"{ico}{sep}assets")
 if (ROOT / "web" / "dist" / "index.html").exists():
@@ -22,13 +24,17 @@ if not (ROOT / "s3s" / "iksm.py").exists():
 entry = ROOT / "build" / "cephalab_entry.py"
 entry.parent.mkdir(exist_ok=True)
 entry.write_text("import sys\nfrom companion.app import main\nsys.exit(main())\n", encoding="utf-8")
-cmd = [str(PY), "-m", "PyInstaller", "--noconfirm", "--onefile", "--windowed", "--name", "cephalab", "--paths", str(ROOT),
+if MAC:
+    head = ["--onedir", "--windowed", "--name", "Cephalab", "--osx-bundle-identifier", "io.github.lii-lac.cephalab"]
+else:
+    head = ["--onefile", "--windowed", "--name", "cephalab"]
+cmd = [str(PY), "-m", "PyInstaller", "--noconfirm", *head, "--paths", str(ROOT),
        "--distpath", str(ROOT / "dist"), "--workpath", str(ROOT / "build"), "--specpath", str(ROOT / "build"),
-       "--hidden-import", "keyring.backends.Windows", "--hidden-import", "bs4", "--hidden-import", "msgpack",
+       "--hidden-import", "keyring.backends.macOS" if MAC else "keyring.backends.Windows", "--hidden-import", "bs4", "--hidden-import", "msgpack",
        "--hidden-import", "uuid", "--hidden-import", "datetime", "--hidden-import", "hashlib", "--hidden-import", "urllib.parse"]  # s3s imports these
 if ico.exists():
     cmd += ["--icon", str(ico)]
 for a in add:
     cmd += ["--add-data", a]
 subprocess.run(cmd + [str(entry)], check=True, cwd=ROOT)
-print(f"built {ROOT / 'dist' / 'cephalab.exe'}")
+print(f"built {ROOT / 'dist' / ('Cephalab.app' if MAC else 'cephalab.exe')}")
