@@ -16,7 +16,7 @@
 
 ### Install
 
-You need Windows 10 or 11 and either a Nintendo Switch Online account or a Switch running Atmosphere with [sys-botbase](https://github.com/olliz0r/sys-botbase/releases).
+You need Windows 10 or 11 (or an Apple Silicon Mac) and either a Nintendo Switch Online account or a Switch running Atmosphere with [sys-botbase](https://github.com/olliz0r/sys-botbase/releases).
 
 1. Download `cephalab.exe` from the latest release.
 2. Run it. It opens in your browser at `http://127.0.0.1:8765`.
@@ -25,6 +25,8 @@ You need Windows 10 or 11 and either a Nintendo Switch Online account or a Switc
    - **CFW Switch:** Install [sys-botbase](https://github.com/olliz0r/sys-botbase/releases), reboot into Atmosphere, and enter your Switch's IP (*System Settings → Internet*).
 
 When your player name shows in the top-right pill, it's working.
+
+**On a Mac:** download `Cephalab-macOS-arm64.zip`, unzip it and drag **Cephalab** into Applications. The first time, macOS blocks it because it isn't notarized: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**. After that it opens normally.
 
 <details>
 <summary>Building from source</summary>
@@ -35,7 +37,8 @@ When your player name shows in the top-right pill, it's working.
 bash core/build.sh && node tests/core/run_tests.mjs          # C++ core -> wasm + tests
 .venv\Scripts\python.exe -m unittest tests.companion.test_companion
 cd web && npm run build
-.venv\Scripts\python.exe tools\build_exe.py                  # dist\cephalab.exe
+.venv\Scripts\python.exe tools\build_exe.py                  # dist\cephalab.exe (on macOS: dist/Cephalab.app)
+.venv\Scripts\python.exe -m companion --selftest              # server, web app and keyring check, exits 0 when fine
 ```
 
 - Fake Switch for testing: `python tests/fake_botbase.py --stock --roll-every 20`
@@ -85,7 +88,9 @@ Pick a popular build under **Weapons** or build your own in the editor, then ope
 
 <img src="docs/img/diagram-sync.png" width="100%" alt="Comparison of Nintendo Account (No CFW) and CFW Switch (sys-botbase). Nintendo Account signs in once, syncs owned gear after each battle, cracks seeds by rolling and scrubbing, and takes chunk/drink counts manually. CFW Switch reads gear live every few seconds, reads exact seeds, chunks, drinks, and star levels from RAM, and adds mistake warnings and Copy outfit.">
 
-**Privacy.** Nintendo login tokens stay in Windows Credential Manager and are never saved in files. Sign-in authenticates with Nintendo through [nxapi](https://github.com/samuelthomas2774/nxapi-znca-api).
+**Discord.** With Discord open, Cephalab shows what you're doing on your profile. With a CFW Switch it's live: where you are (lobby, Splatsville, Grizzco, a shop...), the stage and mode in a match, your party size, and your rank. Without one, it shows your last match from SplatNet. Pick how much it shares under **Settings** (Off, Basic, Full).
+
+**Privacy.** Nintendo login tokens stay in Windows Credential Manager (Keychain on a Mac) and are never saved in files. Sign-in authenticates with Nintendo through [nxapi](https://github.com/samuelthomas2774/nxapi-znca-api).
 
 **No login.** If you'd rather not sign in, you can import an `s3s --getseed` JSON file under **Settings → Data**.
 
