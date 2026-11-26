@@ -8,6 +8,7 @@ Polling: the latest battle is checked every ACTIVE_EVERY seconds while battles k
 stopped); the gear list is fetched only when a new battle shows up, on start, and on request.
 """
 import base64
+import datetime
 import hashlib
 import json
 import os
@@ -116,6 +117,113 @@ def latest_battle_id(history: dict) -> str | None:
         return history["data"]["latestBattleHistories"]["historyGroupsOnlyFirst"]["nodes"][0]["historyDetails"]["nodes"][0]["id"]
     except (KeyError, IndexError, TypeError):
         return None
+
+
+# --- the last match, for the Discord card (SplatNet reports a match once it ends)
+# SplatNet's numeric stage ids -> the datamine's __RowId (Leanny mush 1200 VersusSceneInfo / CoopSceneInfo `Id`).
+VS_STAGES = {1: "Vss_Yunohana", 2: "Vss_District00", 3: "Vss_Yagara", 4: "Vss_Temple01", 5: "Vss_Factory00",
+             6: "Vss_Scrap01", 7: "Vss_BigSlope00", 8: "Vss_Section01", 9: "Vss_Jyoheki03", 10: "Vss_Kaisou04",
+             11: "Vss_Pivot03", 12: "Vss_Hiagari04", 13: "Vss_Upland03", 14: "Vss_Nagasaki03", 15: "Vss_Line03",
+             16: "Vss_Carousel", 17: "Vss_Wave03", 18: "Vss_Pillar03", 19: "Vss_Spider00", 20: "Vss_Twist00",
+             21: "Vss_Cross00", 22: "Vss_Ruins03", 23: "Vss_Propeller00", 24: "Vss_AutoWalk00", 25: "Vss_Manbou00",
+             26: "Vss_Crank02"}
+COOP_STAGES = {1: "Cop_Shakeup", 2: "Cop_Shakespiral", 4: "Cop_Shakelift", 6: "Cop_Shakeship", 7: "Cop_Shakedent",
+               8: "Cop_Shakehighway", 9: "Cop_Shakerail", 100: "Cop_Carousel", 102: "Cop_Upland", 103: "Cop_Temple",
+               104: "Cop_Factory", 105: "Cop_Section", 106: "Cop_District00", 107: "Cop_Manbou00"}
+VS_MODES = {"REGULAR": "turf", "BANKARA": "anarchy", "X_MATCH": "xbattle", "PRIVATE": "private", "LEAGUE": "challenge"}
+VS_RULES = {"TURF_WAR": "Pnt", "TRI_COLOR": "Tcl", "AREA": "Var", "LOFT": "Vlf", "GOAL": "Vgl", "CLAM": "Vcl"}
+X_SUMMARY = {"Var": "xPowerAr", "Vlf": "xPowerLf", "Vgl": "xPowerGl", "Vcl": "xPowerCl"}
+STREAK_GAP = 15 * 60                               # a match within this of the last one's end keeps the streak
+
+
+def _newest_node(reply: dict, key: str) -> dict | None:
+    """historyGroups first: where a reply has both, the OnlyFirst copy can leave fields out (Bankara's has no udemae)."""
+    for groups in ("historyGroups", "historyGroupsOnlyFirst"):
+        try:
+            return reply["data"][key][groups]["nodes"][0]["historyDetails"]["nodes"][0]
+        except (KeyError, IndexError, TypeError):
+            pass
+    return None
+
+
+def _id_num(b64: str) -> int:
+    """"VsStage-3" (base64) -> 3."""
+    return int(base64.b64decode(b64).decode("utf-8").rsplit("-", 1)[-1])
+
+
+def _played(node: dict) -> float | None:
+    """playedTime (ISO, UTC) as epoch seconds; else the time in the node's id ("...:20240101T123456_uuid")."""
+    s = node.get("playedTime")
+    if isinstance(s, str) and s:
+        return datetime.datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp()
+    try:
+        m = re.search(r":(\d{8}T\d{6})_", base64.b64decode(node["id"]).decode("utf-8"))
+    except (KeyError, TypeError, ValueError):
+        m = None
+    if not m:
+        return None
+    return datetime.datetime.strptime(m.group(1), "%Y%m%dT%H%M%S").replace(tzinfo=datetime.timezone.utc).timestamp()
+
+
+def vs_match(detail: dict, udemae: str | None = None) -> dict | None:
+    """One match from VsHistoryDetailQuery (the latest-history nodes carry only id + player):
+    {mode, rule, stage, grade, rank, xpower, played, ended}. udemae ("S+4") comes from BankaraBattleHistoriesQuery."""
+    try:
+        node = detail["data"]["vsHistoryDetail"]
+    except (KeyError, TypeError):
+        return None
+    played = _played(node) if isinstance(node, dict) else None
+    if played is None:
+        return None
+    mode = VS_MODES.get((node.get("vsMode") or {}).get("mode"), "turf")
+    grade, rank = None, None
+    m = re.fullmatch(r"([A-Z][+-]?)(\d*)", str(udemae or ""))
+    if m and mode == "anarchy":
+        grade, rank = m.group(1), int(m.group(2)) if m.group(2) else None
+    sid = (node.get("vsStage") or {}).get("id")
+    dur = node.get("duration")
+    return {"mode": mode, "rule": VS_RULES.get((node.get("vsRule") or {}).get("rule")),
+            "stage": VS_STAGES.get(_id_num(sid)) if sid else None, "grade": grade, "rank": rank, "xpower": None,
+            "played": played, "ended": played + dur if isinstance(dur, (int, float)) else played}
+
+
+def coop_match(coop: dict) -> dict | None:
+    """The newest job in CoopHistoryQuery: stage, title (grade) and its points (EVP, as rank)."""
+    node = _newest_node(coop, "coopResult")
+    played = _played(node) if node else None
+    if played is None:
+        return None
+    sid = (node.get("coopStage") or {}).get("id")
+    pts = node.get("afterGradePoint")
+    return {"mode": "salmon", "rule": None, "stage": COOP_STAGES.get(_id_num(sid)) if sid else None,
+            "grade": (node.get("afterGrade") or {}).get("name"), "rank": pts if isinstance(pts, int) else None,
+            "xpower": None, "played": played, "ended": played}
+
+
+def x_power(xhist: dict, rule: str | None) -> float | None:
+    """XBattleHistoriesQuery: the newest measurement's power once it finished, else this rule's last X Power."""
+    try:
+        top = xhist["data"]["xBattleHistories"]
+        meas = top["historyGroups"]["nodes"][0].get("xMatchMeasurement") or {}
+        if meas.get("state") == "COMPLETED" and isinstance(meas.get("xPowerAfter"), (int, float)):
+            return float(meas["xPowerAfter"])
+        last = ((top.get("summary") or {}).get(X_SUMMARY.get(rule, "")) or {}).get("lastXPower")
+        return float(last) if isinstance(last, (int, float)) else None
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return None
+
+
+def next_match(old: dict | None, new: dict) -> dict:
+    """new as the hub keeps it: {mode, rule, stage, grade, rank, xpower, ended, started_streak}. The streak carries on
+    when new is the same mode and began within STREAK_GAP of old's end; the same match again keeps old's streak."""
+    m = {k: new.get(k) for k in ("mode", "rule", "stage", "grade", "rank", "xpower", "ended")}
+    if old and old.get("ended") == new["ended"] and old.get("mode") == new["mode"]:
+        m["started_streak"] = old.get("started_streak", new["played"])
+    elif old and old.get("mode") == new["mode"] and 0 <= new["played"] - old.get("ended", 0) <= STREAK_GAP:
+        m["started_streak"] = old.get("started_streak", new["played"])
+    else:
+        m["started_streak"] = new["played"]
+    return m
 
 
 class LoginNeeded(Exception):
@@ -323,6 +431,49 @@ class SplatnetSource:
         self._last_battle_at = 0.0
         self._need_outfit = True
         self._outfit_at = 0.0
+        self._vs: tuple[str, dict | None] | None = None    # (battle id, its parsed match): one detail query per battle
+        self._coop: tuple[str, dict | None] | None = None  # (newest job id, its parsed job)
+
+    def _vs_match(self, bid: str) -> dict | None:
+        detail = self._query("VsHistoryDetailQuery", "vsResultId", bid)
+        mode = (((detail.get("data") or {}).get("vsHistoryDetail") or {}).get("vsMode") or {}).get("mode")
+        udemae = None
+        if mode == "BANKARA":
+            try:
+                node = _newest_node(self._query("BankaraBattleHistoriesQuery"), "bankaraBattleHistories")
+                udemae = (node or {}).get("udemae")
+            except Exception:
+                pass                                       # the card just goes without the rank
+        vs = vs_match(detail, udemae)
+        if vs and vs["mode"] == "xbattle":
+            try:
+                vs["xpower"] = x_power(self._query("XBattleHistoriesQuery"), vs["rule"])
+            except Exception:
+                pass                                       # the card just goes without X Power
+        return vs
+
+    def _update_match(self, history: dict):
+        """hub.last_match <- the newest VS match or Salmon Run job, whichever is newer. Only a new battle id / job id is
+        parsed (and only a new battle costs extra queries). Never raises: a reply it can't read keeps the old value."""
+        try:
+            bid = latest_battle_id(history)
+            if bid and (self._vs is None or self._vs[0] != bid):
+                try:
+                    self._vs = (bid, self._vs_match(bid))
+                except Exception:
+                    clog.get().warning("SplatNet battle detail not read", exc_info=True)   # retried next poll
+            try:
+                coop = self._query("CoopHistoryQuery")
+                jid = (_newest_node(coop, "coopResult") or {}).get("id")
+                if jid and (self._coop is None or self._coop[0] != jid):
+                    self._coop = (jid, coop_match(coop))
+            except Exception:
+                clog.get().warning("SplatNet jobs not read", exc_info=True)
+            new = max((c[1] for c in (self._vs, self._coop) if c and c[1]), key=lambda m: m["played"], default=None)
+            if new:
+                self.hub.last_match = next_match(getattr(self.hub, "last_match", None), new)
+        except Exception:
+            clog.get().warning("SplatNet last match not read", exc_info=True)
 
     # --- login (the page drives this through /api/login)
     def login_url(self) -> str:
@@ -439,6 +590,7 @@ class SplatnetSource:
                 patch["playerName"] = pname
             if patch:
                 v = self.vault.update(**patch)
+        self._update_match(history)
         if bid and bid != self._last_battle:
             if self._last_battle is not None:
                 self._last_battle_at = time.time()
