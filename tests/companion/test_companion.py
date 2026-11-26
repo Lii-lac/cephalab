@@ -832,7 +832,7 @@ class Presence(unittest.TestCase):
                 t += 3
                 p.update(t, scene, names)
         feed(24, ["Alex", "Bo"], 6)
-        self.assertIsNone(p.count())                            # not held 20 s yet
+        self.assertEqual(p.count(), (1, 4))                     # not held 20 s yet: just the player
         feed(24, ["Alex", "Bo"], 21)
         self.assertEqual(p.count(), (2, 4))
         feed(24, ["Alex", "Bo", "R1", "R2", "R3"], 30)          # matchmaking fills the room: no one joins, even held
