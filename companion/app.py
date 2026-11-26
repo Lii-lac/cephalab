@@ -20,8 +20,13 @@ from .settings import Settings, SettingsError
 
 
 def root_dir() -> Path:
-    """The repo (or, frozen as an .exe, the folder holding it): state/, cache/ and web/dist live here."""
+    """Where state/ and cache/ live: the repo; frozen on Windows, the folder holding the .exe; frozen on macOS,
+    ~/Library/Application Support/Cephalab (the signed .app bundle must stay unchanged)."""
     if getattr(sys, "frozen", False):
+        if sys.platform == "darwin":
+            d = Path.home() / "Library" / "Application Support" / "Cephalab"
+            d.mkdir(parents=True, exist_ok=True)
+            return d
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent.parent
 
@@ -37,6 +42,44 @@ def _is_cephalab_running(port: int) -> bool:
             return r.status == 200 and isinstance(json.loads(r.read().decode("utf-8", "ignore")), dict)
     except Exception:
         return False
+
+
+def selftest() -> int:
+    """--selftest (CI, on the built app): serve on a free port, GET /api/state and the app's index (when bundled),
+    read a throwaway keyring entry; prints "selftest ok" and returns 0, else prints why and returns 1.
+    State goes to a temp folder; nothing leaves localhost."""
+    import tempfile
+    from .server import App
+    from .vault import Vault
+    srv = None
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            app_obj = App(Hub(Path(d) / "state"), root_dir(), 0)
+            srv = app_obj.serve()
+            threading.Thread(target=srv.serve_forever, daemon=True, name="selftest").start()
+            base = f"http://127.0.0.1:{srv.server_address[1]}"
+            with urllib.request.urlopen(base + "/api/state", timeout=5) as r:
+                if r.status != 200 or not isinstance(json.loads(r.read().decode("utf-8")), dict):
+                    raise RuntimeError(f"/api/state answered {r.status}")
+            if (app_obj.dist / "index.html").exists():
+                with urllib.request.urlopen(base + "/", timeout=5) as r:
+                    if r.status != 200 or b"<" not in r.read():
+                        raise RuntimeError(f"/ answered {r.status}")
+            else:
+                print("selftest: web/dist isn't bundled; skipped the index")
+            Vault(service="cephalab-selftest")._get("probe")      # the keyring backend loads and answers
+            srv.shutdown()
+            srv.server_close()
+            srv = None
+    except Exception as e:
+        print(f"selftest failed: {type(e).__name__}: {e}")
+        return 1
+    finally:
+        if srv is not None:
+            srv.shutdown()
+            srv.server_close()
+    print("selftest ok")
+    return 0
 
 
 def flags_patch(args, current: dict) -> dict:
@@ -58,7 +101,10 @@ def main(argv=None):
     ap.add_argument("--no-open", action="store_true", help="don't open the app in the browser")
     ap.add_argument("--no-tray", action="store_true", help="don't show the Windows system tray icon")
     ap.add_argument("--uri", default="", help="custom protocol URI (e.g. cephalab://start)")
+    ap.add_argument("--selftest", action="store_true", help="check the server, the bundled app and the keyring, then exit")
     args = ap.parse_args(argv)
+    if args.selftest:
+        return selftest()
 
     frozen = bool(getattr(sys, "frozen", False))
     uri_action = protocol.parse_uri(args.uri)
