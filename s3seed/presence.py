@@ -143,7 +143,7 @@ class Party:
     def count(self) -> tuple[int, int] | None:
         """(people, max) for the card, the player included; None before any party is known."""
         if not self.party and self.me is None:
-            return None
+            return 1, PARTY_MAX                # no room list yet (solo in a hub or lobby): just the player
         n = len(set(self.party) | ({self.me} if self.me else set()))
         return min(n, PARTY_MAX), PARTY_MAX
 
