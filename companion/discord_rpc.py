@@ -16,6 +16,7 @@ state (every key optional; what isn't known is left off the card, never guessed)
 import json
 import os
 import random
+import re
 import struct
 import threading
 import time
@@ -96,7 +97,8 @@ def _stage_name(state: dict) -> str:
         return str(state["stage_name"])
     code = state.get("stage")
     for t in (("CommonMsg/Coop/CoopStageName",) if state.get("mode") == "salmon" else ("CommonMsg/VS/VSStageName",)):
-        for c in (code, str(code).split("_", 1)[-1] if "_" in str(code) else None):
+        tail = str(code).split("_", 1)[-1]
+        for c in (code, tail, re.sub(r"\d+$", "", tail)):          # the lang table keys "Factory" for Vss_Factory00
             if c and c in _text(t):
                 return _text(t)[c].replace("\n", " ")
     return ""
@@ -355,13 +357,34 @@ class Presence:
         self._drop()
 
 
-def from_hub(hub) -> dict:
-    """The adapter: what the Discord card can use from what the hub knows. Today only the weapon is live; the place,
-    mode, stage, party and Salmometer arrive here later from new Switch reads."""
+FRESH = 15 * 60                                    # the last SplatNet match shows this long after it ended
+
+
+def from_hub(hub, now=None) -> dict:
+    """The adapter: what the Discord card can use from what the hub knows. The weapon is live (Switch); mode, rule,
+    stage and rank are the last match SplatNet reported (hub.last_match), shown while it ended under FRESH ago, on the
+    bet he's still playing the same thing; place, party and Salmometer arrive later from new Switch reads."""
     st: dict = {}
     snap = hub.snapshots.get("botbase") or {}
     if (hub.status.get("botbase") or {}).get("state") == "ok" and snap.get("weapon") is not None:
         row = weapon_row(snap["weapon"])
         if row:
             st["weapon"] = row
+    m = getattr(hub, "last_match", None)
+    if isinstance(m, dict) and _num(m.get("ended")) is not None and m.get("mode") in MODES \
+            and (time.time() if now is None else now) - m["ended"] < FRESH:
+        st["mode"] = m["mode"]
+        for k in ("rule", "stage"):
+            if m.get(k):
+                st[k] = m[k]
+        if m["mode"] == "anarchy" and m.get("grade"):
+            st["grade"] = m["grade"]
+            if _num(m.get("rank")) is not None:
+                st["rank"] = m["rank"]
+        elif m["mode"] == "xbattle" and _num(m.get("xpower")) is not None:
+            st["xpower"] = m["xpower"]
+        elif m["mode"] == "salmon" and _num(m.get("rank")) is not None:
+            st["rank"] = m["rank"]
+        if _num(m.get("started_streak")) is not None:
+            st["since"] = m["started_streak"]
     return st
