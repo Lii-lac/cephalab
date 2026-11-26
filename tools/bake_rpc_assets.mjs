@@ -126,8 +126,8 @@ html,body{margin:0;background:transparent}
 .fr img{width:100%;height:100%;object-fit:cover}
 /* round badges: full square, Discord crops the circle */
 .bd{display:grid;place-items:center}
-.wp{background:repeating-linear-gradient(-45deg,#1c1c1f 0 ${(2 * SZ / 24).toFixed(2)}px,#2c2c31 ${(2 * SZ / 24).toFixed(2)}px ${(4 * SZ / 24).toFixed(2)}px)}
-.wp img{width:${(21 / 24 * 100).toFixed(3)}%;height:${(21 / 24 * 100).toFixed(3)}%;object-fit:contain;filter:drop-shadow(0 ${(SZ / 24).toFixed(2)}px ${(SZ / 24).toFixed(2)}px rgba(0,0,0,.6))}
+.wp{background:var(--bg)}
+.wp img{width:${(21 / 24 * 100).toFixed(3)}%;height:${(21 / 24 * 100).toFixed(3)}%;object-fit:contain;filter:drop-shadow(0 ${(SZ / 48).toFixed(2)}px ${(SZ / 48).toFixed(2)}px rgba(0,0,0,.4))}
 .kg{background:#f68031}
 .kg img,.kg i{position:absolute;left:12.5%;top:12.5%;width:75%;height:75%;object-fit:contain}
 .kg i{background:#511f1f;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
@@ -142,7 +142,11 @@ for (const s of stages) for (const m of s.modes) {
   const [ang, s1, s2] = FRAMES[m];
   add(`stage/${m}/${s.code}.png`, `<div class="t fr" style="--ang:${ang}deg;--s1:${s1};--s2:${s2}"><div class="in"><img src="${url(stageFile[s.code])}"></div></div>`);
 }
-for (const w of weapons) add(`weapon/${w.id}.png`, `<div class="t bd wp"><img src="${url(w.file)}"></div>`);
+for (const w of weapons) {   // the badge in its mode's color (Alex 2026-11-26), plain white when the mode isn't known
+  add(`weapon/${w.id}.png`, `<div class="t bd wp" style="--bg:#fff"><img src="${url(w.file)}"></div>`);
+  for (const m of ["anarchy", "turf", "xbattle", "private", "challenge"])
+    add(`weapon/${m}/${w.id}.png`, `<div class="t bd wp" style="--bg:${FRAMES[m][1]}"><img src="${url(w.file)}"></div>`);
+}
 const sal = asset("cache/img/salmometer");
 for (let n = 0; n <= 5; n++)
   add(`salmometer/${n}.png`, `<div class="t bd kg"><img src="${url(path.join(sal, `cohozuna_${n}_fill.png`))}"><i style="--m:url('${url(path.join(sal, `cohozuna_${n}_empty.png`))}')"></i></div>`);
